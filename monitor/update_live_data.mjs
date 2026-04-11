@@ -43,7 +43,9 @@ const HEADER =
   "<DATE>\t<TIME>\t<OPEN>\t<HIGH>\t<LOW>\t<CLOSE>\t<TICKVOL>\t<VOL>\t<SPREAD>";
 
 const countArg = process.argv.find((a) => a.startsWith("--count="));
-const COUNT = countArg ? parseInt(countArg.split("=")[1], 10) : 5000;
+const INITIAL_COUNT = countArg ? parseInt(countArg.split("=")[1], 10) : 5000;
+const MAX_COUNT = 80000; // ~55 trading days of M1, upper cap for a single run
+const MAX_RETRIES = 5;
 
 async function main() {
   console.log(`=== Live data update — ${new Date().toISOString()} ===`);
@@ -85,13 +87,60 @@ async function updateSymbol({ symbol, training, live }) {
     return;
   }
 
-  console.log(`${symbol}: pulling last ${COUNT} M1 candles from MT5`);
-  const raw = await getCandles(symbol, TIMEFRAME, COUNT);
-  if (!Array.isArray(raw) || raw.length === 0) {
-    console.log(`${symbol}: MT5 returned no candles`);
-    return;
+  // Iterative pull — double the count until the oldest returned bar
+  // overlaps with lastTs (i.e., the gap is fully covered), or we hit MAX_COUNT.
+  let pullCount = INITIAL_COUNT;
+  let raw = [];
+  let oldestReturned = null;
+  let covered = false;
+
+  for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+    console.log(`${symbol}: pull attempt ${attempt} — requesting ${pullCount} M1 bars`);
+    raw = await getCandles(symbol, TIMEFRAME, pullCount);
+    if (!Array.isArray(raw) || raw.length === 0) {
+      console.log(`${symbol}: MT5 returned no candles`);
+      return;
+    }
+    console.log(`${symbol}: received ${raw.length} candles`);
+
+    oldestReturned = null;
+    for (const c of raw) {
+      const ts = candleTimestamp(c);
+      if (!ts) continue;
+      if (!oldestReturned || ts < oldestReturned) oldestReturned = ts;
+    }
+
+    if (!lastTs || !oldestReturned || oldestReturned <= lastTs) {
+      covered = true;
+      break;
+    }
+
+    // Gap not covered. If we got fewer bars than requested, the broker is
+    // capped — no point retrying with a bigger number.
+    if (raw.length < pullCount * 0.9) {
+      console.warn(
+        `${symbol}: broker capped at ${raw.length} bars (asked for ${pullCount}); stopping`
+      );
+      break;
+    }
+
+    if (pullCount >= MAX_COUNT) {
+      console.warn(`${symbol}: reached MAX_COUNT=${MAX_COUNT}, stopping`);
+      break;
+    }
+
+    pullCount = Math.min(pullCount * 2, MAX_COUNT);
+    console.log(
+      `${symbol}: gap not covered (oldest=${oldestReturned} > last=${lastTs}), retrying with ${pullCount} bars`
+    );
   }
-  console.log(`${symbol}: received ${raw.length} candles`);
+
+  if (lastTs && oldestReturned && oldestReturned > lastTs && !covered) {
+    console.warn(
+      `${symbol}: WARNING — unfilled gap from ${lastTs} to ${oldestReturned}. ` +
+        `Run 'npm run update-data:bootstrap' or re-export the training CSV.`
+    );
+  }
 
   const newRows = [];
   for (const c of raw) {
