@@ -50,7 +50,7 @@ const MAX_RETRIES = 5;
 async function main() {
   console.log(`=== Live data update — ${new Date().toISOString()} ===`);
   console.log(`Data dir: ${DATA_DIR}`);
-  console.log(`Count per symbol: ${COUNT}`);
+  console.log(`Initial count per symbol: ${INITIAL_COUNT} (auto-doubles up to ${MAX_COUNT} to cover gaps)`);
 
   try {
     await mt5Init();
@@ -77,7 +77,12 @@ async function updateSymbol({ symbol, training, live }) {
   let lastTs = null;
   if (existsSync(livePath)) {
     lastTs = lastTimestamp(livePath);
-    console.log(`${symbol}: LIVE exists, last = ${lastTs ?? "(empty)"}`);
+    if (!lastTs && existsSync(trainPath)) {
+      lastTs = lastTimestamp(trainPath);
+      console.log(`${symbol}: LIVE empty — seeding from TRAINING end = ${lastTs}`);
+    } else {
+      console.log(`${symbol}: LIVE last = ${lastTs ?? "(empty)"}`);
+    }
   } else if (existsSync(trainPath)) {
     lastTs = lastTimestamp(trainPath);
     console.log(`${symbol}: LIVE missing — seeding from TRAINING end = ${lastTs}`);

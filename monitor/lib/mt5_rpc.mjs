@@ -114,8 +114,14 @@ function parseCandlesCsv(csv) {
     const cols = line.split(",").map((c) => c.trim().replace(/"/g, ""));
     const obj = {};
     header.forEach((h, i) => {
-      const n = parseFloat(cols[i]);
-      obj[h] = isNaN(n) ? cols[i] : n;
+      const raw = cols[i];
+      if (raw === undefined || raw === "") {
+        obj[h] = raw;
+      } else if (/^-?\d+(\.\d+)?$/.test(raw)) {
+        obj[h] = parseFloat(raw);
+      } else {
+        obj[h] = raw;
+      }
     });
     return obj;
   });
