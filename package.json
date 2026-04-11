@@ -12,7 +12,9 @@
     "update-data": "node monitor/update_live_data.mjs",
     "update-data:bootstrap": "node monitor/update_live_data.mjs --count=20000",
     "monitor": "bash scheduler/start_daily.sh && node monitor/collect_live.mjs && node monitor/check_breach.mjs",
-    "preflight": "bash scheduler/start_daily.sh"
+    "preflight": "bash scheduler/start_daily.sh",
+    "eod": "bash scheduler/run_eod.sh",
+    "start": "bash scheduler/loop.sh"
   },
   "dependencies": {
     "chrome-remote-interface": "^0.34.0"

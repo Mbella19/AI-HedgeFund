@@ -47,17 +47,19 @@ Tradingview/
 └── shortcuts/            OS shortcut files (.lnk)
 ```
 
-## Strategies
+## Strategies (monitored)
 
-| ID | Name | Venue(s) | Symbol | Timeframe |
+| ID | Name | Venue | Symbol | Timeframe |
 |---|---|---|---|---|
-| `s2_momentum_burst_tv` / `_mt5` | S2 Momentum Burst | both | NAS100 | 5m / M5 |
-| `regime_switch_tv` / `_mt5` | Regime Switch Reclaim Fast | both | NAS100 | 1m / M1 |
-| `rast_v20_tv` / `_mt5` | RAST V20 | both | US30 | 5m / M5 |
-| `us30_orb_tv` | US30 ORB Reversal | TV only | US30 | 30m |
-| `us30_vwap_mt5` | US30 VWAP | MT5 only | US30 | M1 |
+| `s2_momentum_burst_mt5` | S2 Momentum Burst | MT5 | NAS100 | M5 |
+| `regime_switch_mt5` | Regime Switch Reclaim Fast | MT5 | NAS100 | M1 |
+| `rast_v20_mt5` | RAST V20 | MT5 | US30 | M5 |
+| `us30_orb_tv` | US30 ORB Reversal | TV | US30 | 30m |
+| `us30_vwap_mt5` | US30 VWAP | MT5 | US30 | M1 |
 
-US30 VWAP does poorly on TradingView. US30 ORB does poorly on MT5.
+Duplicate strategies (S2, Regime Switch, RAST V20) trade identically on both venues;
+monitoring only the MT5 side avoids redundancy. US30 ORB is TV-only (poor on MT5).
+US30 VWAP is MT5-only (poor on TV).
 
 ## Daily run
 

@@ -1,39 +1,6 @@
 {
   "strategies": [
     {
-      "id": "s2_momentum_burst_tv",
-      "name": "S2 Momentum Burst",
-      "venue": "tradingview",
-      "symbol": "PEPPERSTONE:NAS100",
-      "timeframe": "5",
-      "magic": null,
-      "baseline_xlsx": "baselines/tradingview/S2 MOMENTUM BURST NAS100/performance/S2__5b_Momentum_Burst_-_Declining_Risk_PEPPERSTONE_NAS100_2026-04-11.xlsx",
-      "source_file": "baselines/tradingview/S2 MOMENTUM BURST NAS100/code/S2 MOMENTUM BURST.txt",
-      "pine_strategy_name": "S2: 5b Momentum Burst - Declining Risk"
-    },
-    {
-      "id": "regime_switch_tv",
-      "name": "Regime Switch Reclaim Fast",
-      "venue": "tradingview",
-      "symbol": "PEPPERSTONE:NAS100",
-      "timeframe": "1",
-      "magic": null,
-      "baseline_xlsx": "baselines/tradingview/REGIME SWITCH RECLAIM NAS100/performance/Regime_Switch_Reclaim_Fast_(Python-Parity)_PEPPERSTONE_NAS100_2026-04-11.xlsx",
-      "source_file": "baselines/tradingview/REGIME SWITCH RECLAIM NAS100/code/REGIME SWITCH RECLAIM.txt",
-      "pine_strategy_name": "Regime Switch Reclaim Fast (Python-Parity)"
-    },
-    {
-      "id": "rast_v20_tv",
-      "name": "RAST V20",
-      "venue": "tradingview",
-      "symbol": "FPMARKETS:US30",
-      "timeframe": "5",
-      "magic": null,
-      "baseline_xlsx": "baselines/tradingview/RAST V20 US30/performance/RAST_V20_—_US30_Day_Trader_FPMARKETS_US30_2026-04-11.xlsx",
-      "source_file": "baselines/tradingview/RAST V20 US30/code/RAST V20.txt",
-      "pine_strategy_name": "RAST V20 — US30 Day Trader"
-    },
-    {
       "id": "us30_orb_tv",
       "name": "US30 ORB Reversal",
       "venue": "tradingview",

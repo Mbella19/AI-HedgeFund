@@ -21,7 +21,7 @@ You MUST follow that document end-to-end. Key points:
 
 2. **Leverage the diagnosis.** The `diagnosis.md` file names the regime shift. Use this insight when designing the new strategy — e.g., if ATR dropped, consider an adaptive threshold; if session dynamics changed, consider different entry windows.
 
-3. **Same instrument, same venue.** The new strategy must trade the same instrument on the same venue (TV or MT5) as the one it replaces.
+3. **Same instrument, both venues.** The new strategy must trade the same instrument as the one it replaces. Regardless of which venue triggered the breach, always produce **both** Pine Script and MQL5 versions of the new strategy.
 
 4. **Data sources — EXACT PATHS:**
 
@@ -57,8 +57,10 @@ You MUST follow that document end-to-end. Key points:
    - `frozen_strategy.json`
    - `validation_report.md`
    - `iteration_log.md`
-   - `mql5_translation_notes.md` (for MT5 strategies)
-   - The Pine Script or MQL5 source file
+   - `mql5_translation_notes.md`
+   - `strategy.pine` — Pine Script source
+   - `strategy.mq5` — MQL5 source
+   - Both are always produced regardless of which venue triggered the breach
 
 6. **Do NOT auto-deploy.** The new strategy goes into the proposed folder. The daily summary will flag it for the user's review. Rationale: replacing an entire strategy is a high-stakes decision. The user should see the validation report and decide.
 
