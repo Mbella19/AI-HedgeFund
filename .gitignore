@@ -33,8 +33,9 @@ monitor/mt5_mirror/__pycache__/
 .env.local
 *.secret
 
-# Proprietary trading IP — strategies, EAs, and backtest reports
+# Proprietary trading IP — strategies, EAs, backtest reports, and TV→MT5 bridge bots
 baselines/
+bots/
 
 # Claude local state (user-specific permissions, credentials in bash history)
 .claude/settings.local.json
