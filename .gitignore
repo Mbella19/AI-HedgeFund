@@ -33,6 +33,9 @@ monitor/mt5_mirror/__pycache__/
 .env.local
 *.secret
 
+# Proprietary trading IP — strategies, EAs, and backtest reports
+baselines/
+
 # Claude local state (user-specific permissions, credentials in bash history)
 .claude/settings.local.json
 .claude/scheduled_tasks.lock
