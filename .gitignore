@@ -1,0 +1,38 @@
+# Dependencies
+node_modules/
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# OS
+.DS_Store
+Thumbs.db
+*.lnk
+
+# Generated monitor state
+monitor/baselines.json
+monitor/state.json
+monitor/history/
+monitor/events/
+monitor/config/mt5_tools.json
+monitor/mt5_mirror/__pycache__/
+
+# Logs
+*.log
+/tmp/mt5_mcp.log
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Secrets / credentials
+.env
+.env.local
+*.secret
+
+# Claude local state (user-specific permissions, credentials in bash history)
+.claude/settings.local.json
+.claude/scheduled_tasks.lock

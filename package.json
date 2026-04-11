@@ -1,0 +1,21 @@
+{
+  "name": "tradingview-strategy-monitor",
+  "version": "1.0.0",
+  "description": "End-of-day autonomous monitor for TradingView + MT5 quant strategies with breach detection and auto-remediation.",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "parse": "python3 monitor/parse_baselines.py",
+    "collect": "node monitor/collect_live.mjs",
+    "collect:dry": "node monitor/collect_live.mjs --dry-run",
+    "check": "node monitor/check_breach.mjs",
+    "monitor": "bash scheduler/start_daily.sh && node monitor/collect_live.mjs && node monitor/check_breach.mjs",
+    "preflight": "bash scheduler/start_daily.sh"
+  },
+  "dependencies": {
+    "chrome-remote-interface": "^0.34.0"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

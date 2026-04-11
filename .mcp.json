@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "tradingview": {
+      "command": "node",
+      "args": ["/Users/gervaciusjr/tradingview-mcp-jackson/src/server.js"]
+    },
+    "metatrader": {
+      "command": "npx",
+      "args": ["-y", "mcp-remote", "http://127.0.0.1:18080/mcp"]
+    }
+  }
+}
