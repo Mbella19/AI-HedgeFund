@@ -14,16 +14,30 @@ You are diagnosing why a trading strategy has breached its backtest baseline.
 
 ### 1. Gather price data around the failure
 
-**TradingView strategies:**
-- Switch to the strategy's chart tab using `mcp__tradingview__tab_list` + `mcp__tradingview__tab_switch`
-- Call `mcp__tradingview__data_get_ohlcv` with `summary=true` to get recent price data
-- Call `mcp__tradingview__data_get_study_values` to read indicator values (ATR, ADX, volume MA)
-- Call `mcp__tradingview__data_get_trades` to get the full trade list; focus on the live period
+**Primary source — the CSV files** (for both TV and MT5 strategies, since the
+underlying instrument is the same index):
 
-**MT5 strategies:**
-- Use `monitor/lib/mt5_rpc.mjs` patterns (via bash + node) to call:
-  - `get_candles_latest` for the strategy's symbol and timeframe (500 bars)
-  - `get_deals` for the live period, filtered by symbol
+- `/Users/gervaciusjr/Desktop/strategy dev v3/Data/{SYMBOL} TRAINING.csv` — frozen M1 bars for the baseline era
+- `/Users/gervaciusjr/Desktop/strategy dev v3/Data/{SYMBOL} LIVE.csv` — M1 bars appended nightly, covering the live/failure period
+- `{SYMBOL}` is `US30` for US30 strategies and `NAS100` for NAS100 strategies
+- Both files are tab-separated with columns `<DATE>\t<TIME>\t<OPEN>\t<HIGH>\t<LOW>\t<CLOSE>\t<TICKVOL>\t<VOL>\t<SPREAD>`
+- Load them together in Python (pandas `read_csv` with `sep='\t'`). Resample to the strategy's timeframe if it's above M1 (group every 5 rows for M5, every 30 rows for 30m).
+- If `LIVE.csv` is missing or stale (last timestamp more than 2 days old), run `npm run update-data` before starting analysis.
+
+**Secondary — live MCP pulls** (only for bars newer than the last LIVE.csv update, i.e., the current session):
+
+- TradingView: `mcp__tradingview__data_get_ohlcv` with `summary=true`
+- MT5: `get_candles_latest` via `monitor/lib/mt5_rpc.mjs` with `count=500`
+
+**Live trades and indicator values** (always via MCP — these are not in the CSVs):
+
+- TradingView strategies:
+  - Switch to the chart tab via `mcp__tradingview__tab_list` + `mcp__tradingview__tab_switch`
+  - `mcp__tradingview__data_get_trades` for the full trade list (filter to live period)
+  - `mcp__tradingview__data_get_study_values` for ATR, ADX, volume MA, etc.
+- MT5 strategies:
+  - `get_deals` via `monitor/lib/mt5_rpc.mjs` for the live period, filtered by symbol and magic
+  - Compute indicators in Python against the CSV bars (ATR, ADX, session VWAP, etc.)
 
 ### 2. Compute regime comparison
 
