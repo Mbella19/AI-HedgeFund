@@ -9,6 +9,8 @@
     "collect": "node monitor/collect_live.mjs",
     "collect:dry": "node monitor/collect_live.mjs --dry-run",
     "check": "node monitor/check_breach.mjs",
+    "update-data": "node monitor/update_live_data.mjs",
+    "update-data:bootstrap": "node monitor/update_live_data.mjs --count=20000",
     "monitor": "bash scheduler/start_daily.sh && node monitor/collect_live.mjs && node monitor/check_breach.mjs",
     "preflight": "bash scheduler/start_daily.sh"
   },

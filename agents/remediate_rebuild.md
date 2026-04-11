@@ -44,10 +44,11 @@ You MUST follow that document end-to-end. Key points:
    | US30 ORB Reversal (US30) | 30 min | — |
    | US30 VWAP (US30) | — | M1 |
 
-   **For pulling recent data beyond CSV coverage** (e.g., the live/failure period that happened after the CSV was exported):
-   - TradingView: `mcp__tradingview__data_get_ohlcv` with `count=500` per call. Append to the CSV data.
-   - MT5: `get_candles_latest` via MCP (symbol, timeframe, count=500). Append to the CSV data.
-   - Ensure no overlap or gaps when stitching CSV + live data. Deduplicate by timestamp.
+   **LIVE CSVs are auto-updated nightly** by `monitor/update_live_data.mjs` via the MT5 MCP. Each run appends fresh M1 bars so the gap between TRAINING.csv end and "now" stays under 24 hours:
+   - `US30 LIVE.csv` and `NAS100 LIVE.csv` live in the same data dir as the TRAINING csvs
+   - Concatenate TRAINING + LIVE in the Python backtester loader: same tab-separated `<DATE>\t<TIME>\t<OPEN>\t<HIGH>\t<LOW>\t<CLOSE>\t<TICKVOL>\t<VOL>\t<SPREAD>` format
+   - If a LIVE csv is missing or stale, run `npm run update-data` (or `npm run update-data:bootstrap` for a larger first pull) before backtesting
+   - For data even more recent than the last LIVE run (e.g., bars from the current session), call `mcp__tradingview__data_get_ohlcv` or MT5 `get_candles_latest` directly and stitch in memory. Dedupe by timestamp.
 
 5. **Output location:**
    Write ALL artifacts to `monitor/events/<strategy_id>-<date>/proposed_new/`:

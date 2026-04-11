@@ -415,24 +415,51 @@ and flagged in the daily summary for the user to review and approve.
 
 ## Historical data
 
-Backtesting and rebuilds use M1 OHLCV CSVs exported once and versioned
-outside this repo:
+Backtesting and rebuilds use M1 OHLCV CSVs versioned outside this repo:
 
 ```
 /Users/gervaciusjr/Desktop/strategy dev v3/Data/
-├── US30 TRAINING.csv       136 MB, M1 bars, 2019–2026
-├── us30 tru oos.csv         14 MB, sealed vault
-├── NAS100 TRAINING.csv     134 MB, M1 bars, 2019–2026
-└── NAS100 TRUE OOS.csv      14 MB, sealed vault
+├── US30 TRAINING.csv       136 MB, M1 bars, frozen reference (2019–2025)
+├── US30 LIVE.csv           (auto-grown) appended nightly with fresh bars
+├── us30 tru oos.csv         14 MB, sealed vault (touch once)
+├── NAS100 TRAINING.csv     134 MB, M1 bars, frozen reference (2019–2025)
+├── NAS100 LIVE.csv         (auto-grown) appended nightly with fresh bars
+└── NAS100 TRUE OOS.csv      14 MB, sealed vault (touch once)
 ```
 
-For timeframes above M1, the Python backtester resamples in-memory (group
-every 5 rows for M5, every 30 rows for 30m, using standard OHLCV aggregation:
-first open, max high, min low, last close, sum volume).
+**TRAINING csvs are frozen snapshots.** They never change after export.
 
-For live-window data beyond the CSV's coverage, the rebuild pipeline
-appends bars pulled via MT5 MCP `get_candles_latest` or TradingView
-`data_get_ohlcv`, deduplicating by timestamp.
+**LIVE csvs are append-only** and extended every night by
+`monitor/update_live_data.mjs`, which runs as part of the preflight step in
+`scheduler/start_daily.sh`. The updater:
+
+1. Reads the last timestamp from `{SYMBOL} LIVE.csv` (or seeds from
+   `{SYMBOL} TRAINING.csv` on first run).
+2. Pulls the most recent N M1 bars from MT5 MCP `get_candles_latest`
+   (default `N=5000`, ~3.5 days of safety margin).
+3. Filters to bars strictly after the last known timestamp.
+4. Appends them in the same tab-separated MT5 format so the training CSV
+   loader works unmodified.
+
+Python backtesters concatenate `TRAINING.csv` + `LIVE.csv` at load time. The
+gap between "last bar in the data" and "now" therefore never exceeds 24
+hours — the duration of one day's scheduler run.
+
+For timeframes above M1, the Python backtester resamples in-memory (group
+every 5 rows for M5, every 30 rows for 30m, using standard OHLCV
+aggregation: first open, max high, min low, last close, sum volume).
+
+For bars even fresher than the last LIVE update (e.g., the current session
+when diagnosing an intraday breach), the agent can call MT5
+`get_candles_latest` or TradingView `data_get_ohlcv` directly and stitch in
+memory, deduplicating by timestamp.
+
+### Manual commands
+
+```bash
+npm run update-data              # nightly update (≈5000 bars per symbol)
+npm run update-data:bootstrap    # initial bootstrap (20000 bars per symbol)
+```
 
 ---
 

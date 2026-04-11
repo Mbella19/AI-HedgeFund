@@ -82,5 +82,10 @@ if [ ! -f monitor/baselines.json ]; then
     python3 monitor/parse_baselines.py
 fi
 
+# ─── Update LIVE CSVs with fresh M1 bars ───
+echo ""
+echo "Updating LIVE CSVs..."
+node monitor/update_live_data.mjs || echo "  (non-fatal; continuing)"
+
 echo ""
 echo "Preflight complete. Ready for collect + check."

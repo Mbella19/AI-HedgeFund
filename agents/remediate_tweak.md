@@ -52,7 +52,7 @@ Since the MT5 MCP does not expose a strategy tester tool:
   - Regime Switch Reclaim NAS100 → use M1 directly
   - RAST V20 US30 → resample to M5
   - US30 VWAP → use M1 directly
-- For recent data past CSV coverage, pull via MT5 MCP `get_candles_latest` and append
+- Recent bars are already in `{SYMBOL} LIVE.csv` (auto-updated nightly by `monitor/update_live_data.mjs`); load TRAINING + LIVE together. For bars more recent than the last update run, call `get_candles_latest` via MT5 MCP and stitch in memory
 
 ## After successful tweak
 
