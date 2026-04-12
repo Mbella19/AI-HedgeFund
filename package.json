@@ -14,7 +14,10 @@
     "monitor": "bash scheduler/start_daily.sh && node monitor/collect_live.mjs && node monitor/check_breach.mjs",
     "preflight": "bash scheduler/start_daily.sh",
     "eod": "bash scheduler/run_eod.sh",
-    "start": "bash scheduler/loop.sh"
+    "start": "bash scheduler/loop.sh",
+    "dashboard": "cd dashboard && npm run dev",
+    "dashboard:build": "cd dashboard && npm run build",
+    "dashboard:prod": "cd dashboard && npm run start"
   },
   "dependencies": {
     "chrome-remote-interface": "^0.34.0"

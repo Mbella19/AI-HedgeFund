@@ -12,13 +12,17 @@ import { readFileSync, writeFileSync, mkdirSync, existsSync } from "fs";
 import { resolve, dirname } from "path";
 import { fileURLToPath } from "url";
 import { checkBreaches } from "./lib/metrics.mjs";
+import { loadEnv } from "./lib/env.mjs";
+import { notifyBreach } from "./lib/discord.mjs";
+
+loadEnv();
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const STATE_PATH = resolve(__dirname, "state.json");
 const BASELINES_PATH = resolve(__dirname, "baselines.json");
 const HISTORY_DIR = resolve(__dirname, "history");
 
-function main() {
+async function main() {
   if (!existsSync(STATE_PATH)) {
     console.error("No state.json found. Run collect_live.mjs first.");
     process.exit(1);
@@ -118,7 +122,28 @@ function main() {
   }
   writeFileSync(logPath, existing + logEntry);
 
+  // ─── Discord notification on any breach ───
+  if (totalBreaches > 0) {
+    const breachedPayload = breachedStrategies.map((sid) => ({
+      id: sid,
+      breaches: state.strategies[sid].breaches || [],
+    }));
+    try {
+      await notifyBreach({
+        dateStr,
+        totalStrategies: Object.keys(state.strategies).length,
+        totalBreaches,
+        breached: breachedPayload,
+      });
+    } catch (err) {
+      console.error(`[discord] notification failed: ${err?.message || err}`);
+    }
+  }
+
   process.exit(totalBreaches > 0 ? 1 : 0);
 }
 
-main();
+main().catch((err) => {
+  console.error(err);
+  process.exit(1);
+});
