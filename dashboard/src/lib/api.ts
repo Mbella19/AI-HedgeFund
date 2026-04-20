@@ -9,20 +9,47 @@ import type {
   State,
   StrategyConfig,
 } from "./types";
+import { clearToken, getToken } from "./auth";
+
+function authHeaders(): Record<string, string> {
+  const tok = getToken();
+  return tok ? { Authorization: `Bearer ${tok}` } : {};
+}
+
+function handle401(resp: Response): void {
+  if (resp.status !== 401) return;
+  clearToken();
+  if (typeof window !== "undefined") window.location.reload();
+}
 
 async function get<T>(path: string): Promise<T> {
-  const resp = await fetch(path);
-  if (!resp.ok) throw new Error(`${path} → ${resp.status}`);
+  const resp = await fetch(path, { headers: authHeaders() });
+  if (!resp.ok) {
+    handle401(resp);
+    throw new Error(`${path} → ${resp.status}`);
+  }
   return resp.json();
 }
 
 async function post<T>(path: string, body?: unknown): Promise<T> {
   const resp = await fetch(path, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...authHeaders() },
     body: body ? JSON.stringify(body) : undefined,
   });
-  if (!resp.ok) throw new Error(`${path} → ${resp.status}`);
+  if (!resp.ok) {
+    handle401(resp);
+    throw new Error(`${path} → ${resp.status}`);
+  }
+  return resp.json();
+}
+
+export async function authPing(): Promise<{
+  authRequired: boolean;
+  ok: boolean;
+}> {
+  const resp = await fetch("/api/auth/ping", { headers: authHeaders() });
+  if (resp.status === 401) return { authRequired: true, ok: false };
   return resp.json();
 }
 

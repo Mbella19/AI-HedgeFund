@@ -111,8 +111,8 @@ async function collectMT5Trades(strat, baseline) {
       const dealMagic = parseInt(d.magic || d.Magic || d.MAGIC || "0", 10);
       if (dealMagic !== magic) return false;
     }
-    const type = (d.type || d.Type || "").toLowerCase();
-    return type === "buy" || type === "sell";
+    const type = String(d.type ?? d.Type ?? "").toLowerCase();
+    return type === "0" || type === "1" || type === "buy" || type === "sell";
   });
 
   return pairDealsToTrades(filtered);

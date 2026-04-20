@@ -44,9 +44,36 @@ const BOTS = {
 };
 
 const PORT = Number(process.env.DASHBOARD_PORT || 3001);
+const DASHBOARD_TOKEN = process.env.DASHBOARD_TOKEN || null;
 
 const app = express();
 app.use(express.json());
+
+// ─── Token auth ───
+// When DASHBOARD_TOKEN is set, every /api/* call must present
+// `Authorization: Bearer <token>` (or `?token=<token>` for manual probes).
+// /api/auth/ping is the one exception — it reports whether auth is required
+// and whether the supplied token is valid, so the UI can decide when to
+// render the login screen.
+function checkToken(req) {
+  if (!DASHBOARD_TOKEN) return true;
+  const header = req.headers.authorization || "";
+  const bearer = header.startsWith("Bearer ") ? header.slice(7) : null;
+  const supplied = bearer || req.query.token || null;
+  return supplied === DASHBOARD_TOKEN;
+}
+
+app.get("/api/auth/ping", (req, res) => {
+  if (!DASHBOARD_TOKEN) return res.json({ authRequired: false, ok: true });
+  if (checkToken(req)) return res.json({ authRequired: true, ok: true });
+  res.status(401).json({ authRequired: true, ok: false });
+});
+
+app.use("/api", (req, res, next) => {
+  if (req.path === "/auth/ping") return next();
+  if (checkToken(req)) return next();
+  res.status(401).json({ error: "unauthorized" });
+});
 
 // ─── Generic process lifecycle (loop + bots) ───
 // Long-running children are spawned detached, their PID is persisted to disk,

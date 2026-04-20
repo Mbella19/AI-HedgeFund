@@ -2,21 +2,51 @@
 @tailwind components;
 @tailwind utilities;
 
-@layer base {
-  :root {
-    color-scheme: dark;
-  }
+:root {
+  --bg: #0c0c0e;
+  --surface: #161618;
+  --surface-2: #1d1d20;
+  --line: #25252a;
+  --ink: #f4efe6;
+  --ink-2: #a8a29a;
+  --ink-3: #6b6862;
+  --peach: #f5b7a4;
+  --peach-ink: #2a1410;
+  --lavender: #d6d2f5;
+  --lavender-ink: #1a1736;
+  --mint: #b8e8c8;
+  --mint-ink: #0e2a18;
+  --yellow: #f0d33a;
+  --yellow-ink: #2a2300;
+  --red: #e8927c;
+  --red-soft: #3a1e18;
+}
 
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+@layer base {
   html,
   body,
   #root {
-    background: #050608;
-    color: #f5f5f7;
-    -webkit-font-smoothing: antialiased;
-    font-feature-settings: "cv02", "cv03", "cv04", "cv11", "ss01";
+    margin: 0;
+    padding: 0;
+    min-height: 100vh;
+    background: #08080a;
   }
-
-  /* Subtle scrollbar */
+  body {
+    color: var(--ink);
+    font-family: "Inter Tight", system-ui, -apple-system, sans-serif;
+    font-feature-settings: "ss01", "cv11";
+    -webkit-font-smoothing: antialiased;
+    overscroll-behavior: none;
+  }
+  button {
+    font-family: inherit;
+    cursor: pointer;
+  }
   ::-webkit-scrollbar {
     width: 10px;
     height: 10px;
@@ -25,37 +55,56 @@
     background: transparent;
   }
   ::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.08);
-    border-radius: 8px;
-    border: 2px solid #050608;
-  }
-  ::-webkit-scrollbar-thumb:hover {
-    background: rgba(255, 255, 255, 0.14);
-  }
-
-  /* Focus ring */
-  *:focus-visible {
-    outline: 2px solid rgba(56, 189, 248, 0.55);
-    outline-offset: 2px;
+    background: var(--line);
     border-radius: 8px;
   }
 }
 
 @layer components {
+  .mono {
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+    font-feature-settings: "tnum", "zero";
+  }
   .num {
     font-variant-numeric: tabular-nums;
-    font-feature-settings: "tnum";
   }
   .eyebrow {
-    @apply text-[11px] font-medium uppercase tracking-[0.28em] text-white/45;
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    font-weight: 700;
+    color: var(--ink-3);
+    text-transform: uppercase;
   }
-  .glass {
-    @apply border border-white/10 bg-white/[0.035] backdrop-blur-xl;
+}
+
+/* Backdrop dot pattern on desktop */
+.stage-dots {
+  background:
+    radial-gradient(circle at 1px 1px, #1a1a1c 1px, transparent 0) 0 0 / 22px 22px,
+    #0a0a0c;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
   }
-  .glass-soft {
-    @apply border border-white/10 bg-white/[0.02] backdrop-blur-xl;
+  to {
+    opacity: 1;
   }
-  .glass-inset {
-    @apply border border-white/10 bg-black/25 backdrop-blur;
+}
+@keyframes slide-up {
+  from {
+    transform: translateY(20%);
+    opacity: 0;
   }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+.anim-fade {
+  animation: fade-in 0.25s ease;
+}
+.anim-slide-up {
+  animation: slide-up 0.3s cubic-bezier(0.2, 0.9, 0.3, 1);
 }
