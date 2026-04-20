@@ -56,7 +56,7 @@ echo ""
 
 claude \
     --dangerously-skip-permissions \
-    --model claude-opus-4-6 \
+    --model claude-opus-4-7 \
     --effort max \
     -p "$(cat <<'PROMPT'
 You are running as the EOD strategy monitor. A breach has been detected.

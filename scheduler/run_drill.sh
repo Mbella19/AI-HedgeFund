@@ -106,7 +106,7 @@ echo ""
 
 claude \
     --dangerously-skip-permissions \
-    --model claude-opus-4-6 \
+    --model claude-opus-4-7 \
     --effort max \
     -p "$(cat "${DRILL_DIR}/drill_prompt.md")"
 
