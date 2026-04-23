@@ -5,8 +5,10 @@
       "name": "US30 ORB Reversal",
       "venue": "tradingview",
       "symbol": "FPMARKETS:US30",
+      "mt5_symbol": "US30",
       "timeframe": "30",
       "magic": null,
+      "mt5_bridge_magic": 30042001,
       "baseline_xlsx": "baselines/tradingview/US30 ORB REVERSAL/performance/US30_ORB_Reversal_v1.0_FPMARKETS_US30_2026-04-11.xlsx",
       "source_file": "baselines/tradingview/US30 ORB REVERSAL/code/US30 ORB REVERSAL.txt",
       "pine_strategy_name": "US30 ORB Reversal v1.0"

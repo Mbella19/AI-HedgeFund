@@ -51,13 +51,23 @@ async function main() {
 
     try {
       let trades;
-      if (strat.venue === "mt5") {
+      const useBridge = strat.venue === "tradingview" && strat.mt5_bridge_magic;
+      if (strat.venue === "mt5" || useBridge) {
         if (!mt5Ready) {
           await mt5Init();
           mt5Ready = true;
           console.log("MT5 MCP connected");
         }
-        trades = await collectMT5Trades(strat, baseline);
+        trades = await collectMT5Trades(
+          useBridge
+            ? {
+                ...strat,
+                symbol: strat.mt5_symbol || strat.symbol,
+                magic: strat.mt5_bridge_magic,
+              }
+            : strat,
+          baseline
+        );
       } else {
         if (!cdpReady) {
           await connectCDP();
