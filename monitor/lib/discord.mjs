@@ -48,6 +48,8 @@ export async function notifyBreach({
   totalStrategies,
   totalBreaches,
   breached,
+  newSigs = [],
+  clearedSigs = [],
 }) {
   const webhook = process.env.DISCORD_WEBHOOK_URL;
   if (!webhook) {
@@ -72,9 +74,14 @@ export async function notifyBreach({
     inline: false,
   }));
 
+  const deltaParts = [];
+  if (newSigs.length > 0) deltaParts.push(`🆕 ${newSigs.length} new`);
+  if (clearedSigs.length > 0) deltaParts.push(`✅ ${clearedSigs.length} cleared`);
+  const deltaLine = deltaParts.length > 0 ? `\n_${deltaParts.join(" · ")}_` : "";
+
   const embed = {
     title: `EOD breach · ${dateStr}`,
-    description: `**${totalBreaches}** rule${totalBreaches === 1 ? "" : "s"} fired across **${breached.length}/${totalStrategies}** ${breached.length === 1 ? "strategy" : "strategies"}`,
+    description: `**${totalBreaches}** rule${totalBreaches === 1 ? "" : "s"} fired across **${breached.length}/${totalStrategies}** ${breached.length === 1 ? "strategy" : "strategies"}${deltaLine}`,
     color,
     fields,
     footer: { text: "Quant Monitor · Autonomous EOD loop" },

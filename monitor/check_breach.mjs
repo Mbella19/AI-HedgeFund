@@ -8,12 +8,18 @@
  *   node monitor/check_breach.mjs
  */
 
-import { readFileSync, writeFileSync, mkdirSync, existsSync } from "fs";
+import {
+  readFileSync,
+  writeFileSync,
+  mkdirSync,
+  existsSync,
+  readdirSync,
+} from "fs";
 import { resolve, dirname } from "path";
 import { fileURLToPath } from "url";
 import { checkBreaches } from "./lib/metrics.mjs";
 import { loadEnv } from "./lib/env.mjs";
-import { notifyBreach } from "./lib/discord.mjs";
+import { notifyBreach, notifyRecovery } from "./lib/discord.mjs";
 
 loadEnv();
 
@@ -122,8 +128,26 @@ async function main() {
   }
   writeFileSync(logPath, existing + logEntry);
 
-  // ─── Discord notification on any breach ───
-  if (totalBreaches > 0) {
+  // ─── Discord notification — only on change vs prior run ───
+  const todaySigs = breachSignatures(state);
+  const prior = loadPriorState(HISTORY_DIR, dateStr);
+  const priorSigs = prior ? breachSignatures(prior) : new Set();
+  const newSigs = [...todaySigs].filter((s) => !priorSigs.has(s));
+  const clearedSigs = [...priorSigs].filter((s) => !todaySigs.has(s));
+
+  if (totalBreaches === 0 && clearedSigs.length > 0) {
+    const recoveredIds = [
+      ...new Set(clearedSigs.map((s) => s.split("::")[0])),
+    ];
+    try {
+      await notifyRecovery({ dateStr, recoveredIds });
+      console.log(
+        `[discord] recovery notification sent (${recoveredIds.length} strategies)`
+      );
+    } catch (err) {
+      console.error(`[discord] recovery notify failed: ${err?.message || err}`);
+    }
+  } else if (totalBreaches > 0 && (newSigs.length > 0 || clearedSigs.length > 0)) {
     const breachedPayload = breachedStrategies.map((sid) => ({
       id: sid,
       breaches: state.strategies[sid].breaches || [],
@@ -134,13 +158,46 @@ async function main() {
         totalStrategies: Object.keys(state.strategies).length,
         totalBreaches,
         breached: breachedPayload,
+        newSigs,
+        clearedSigs,
       });
     } catch (err) {
       console.error(`[discord] notification failed: ${err?.message || err}`);
     }
+  } else if (totalBreaches > 0) {
+    console.log(
+      `[discord] suppressed — same breach set as ${prior?._priorDate ?? "prior run"} (${todaySigs.size} rule(s))`
+    );
   }
 
   process.exit(totalBreaches > 0 ? 1 : 0);
+}
+
+function breachSignatures(state) {
+  const sigs = new Set();
+  for (const [sid, s] of Object.entries(state.strategies || {})) {
+    for (const b of s.breaches || []) {
+      sigs.add(`${sid}::${b.rule}`);
+    }
+  }
+  return sigs;
+}
+
+function loadPriorState(historyDir, todayDateStr) {
+  if (!existsSync(historyDir)) return null;
+  const files = readdirSync(historyDir)
+    .filter((f) => /^\d{4}-\d{2}-\d{2}-state\.json$/.test(f))
+    .filter((f) => !f.startsWith(`${todayDateStr}-`))
+    .sort();
+  const last = files.pop();
+  if (!last) return null;
+  try {
+    const parsed = JSON.parse(readFileSync(resolve(historyDir, last), "utf-8"));
+    parsed._priorDate = last.slice(0, 10);
+    return parsed;
+  } catch {
+    return null;
+  }
 }
 
 main().catch((err) => {
