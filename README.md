@@ -9,15 +9,19 @@ day after the US cash close, the system:
    breach rules.
 3. On breach, diagnoses the root cause from full price, indicator, and trade
    data.
-4. Either tweaks strategy parameters (and auto-verifies against baseline + live
-   periods) or proposes a full rebuild following the strategy development
-   contract.
+4. Either tweaks strategy parameters (auto-verified against baseline + live
+   periods) or proposes a full rebuild via the `/goal`-driven strategy-design
+   prompt.
 5. Logs every decision, parameter change, and backtest result for review.
 
-The system is driven by Claude running an agent loop over prompt fragments in
-`agents/`. All remediation is bounded by hard rules: tweaks only touch `input`
-defaults, rebuilds must clear twelve validation criteria plus a sealed vault
-test, and no rebuilt strategy is ever auto-deployed without human review.
+The system is driven by Claude running an agent loop over the prompt fragments
+in `agents/`. All remediation is bounded by hard rules: tweaks only touch
+`input` defaults, rebuilds must clear twelve validation criteria plus a sealed
+vault test, and no rebuilt strategy is ever auto-deployed without human
+review.
+
+A companion **dashboard** (`dashboard/`, Vite + React + Express) exposes live
+breach status, recent events, and per-strategy charts for phone or desktop.
 
 ---
 
@@ -36,32 +40,44 @@ test, and no rebuilt strategy is ever auto-deployed without human review.
 - [Remediation paths](#remediation-paths)
 - [Historical data](#historical-data)
 - [MCP servers](#mcp-servers)
-- [Security](#security)
+- [Dashboard](#dashboard)
+- [Security & gitignore policy](#security--gitignore-policy)
 - [Contributing](#contributing)
+- [License](#license)
 
 ---
 
 ## Portfolio
 
-Five intraday index strategies are monitored across eight venue-specific
-configurations. Some strategies run on both venues, others are venue-exclusive
-because of execution quality.
+Seven intraday index strategies are tracked. Strategies that trade identically
+on both venues are monitored only on the MT5 side (richer trade data via the
+MCP); TV-only or MT5-only strategies stay where the edge replicates cleanly.
 
-| Strategy ID | Name | Venue | Symbol | Timeframe | Magic |
+| Strategy ID | Name | Venue | Symbol | TF | Magic |
 |---|---|---|---|---|---|
-| `s2_momentum_burst_tv` | S2 Momentum Burst (declining risk) | TradingView | PEPPERSTONE:NAS100 | 5m | — |
-| `s2_momentum_burst_mt5` | S2 Momentum Burst (declining risk) | MT5 | NAS100 | M5 | 520001 |
-| `regime_switch_tv` | Regime Switch Reclaim Fast | TradingView | PEPPERSTONE:NAS100 | 1m | — |
-| `regime_switch_mt5` | Regime Switch Reclaim Fast | MT5 | NAS100 | M1 | 60315002 |
-| `rast_v20_tv` | RAST V20 US30 Day Trader | TradingView | FPMARKETS:US30 | 5m | — |
-| `rast_v20_mt5` | RAST V20 US30 Day Trader | MT5 | US30 | M5 | 20020 |
-| `us30_orb_tv` | US30 ORB Reversal v1.0 | TradingView | FPMARKETS:US30 | 30m | — |
-| `us30_vwap_mt5` | US30 VWAP | MT5 | US30 | M1 | 55160420 |
+| `s2_momentum_burst_mt5` | S2 Momentum Burst (declining risk) | MT5 | NAS100 | M5 | `520001` |
+| `regime_switch_mt5` | Regime Switch Reclaim Fast | MT5 | NAS100 | M1 | `60315002` |
+| `rast_v20_mt5` | RAST V20 US30 Day Trader | MT5 | US30 | M5 | `20020` |
+| `us30_orb_tv` | US30 ORB Reversal v1.0 | TV (via bridge) | US30 | 30m | `30042001` (`mt5_bridge_magic`) |
+| `us30_vwap_mt5` | US30 VWAP | MT5 | US30 | M1 | `55160420` |
+| `hsdm_mt5` | HSDM (3-leg cash-session) | MT5 | NAS100 | M1 | `314159` |
+| `iter75_ensemble_mt5` | iter75 6-leg ensemble | MT5 | NAS100 | H1 | `75000` |
+
+**Bridge magic:** `us30_orb_tv` is a TradingView Pine strategy whose live fills
+are mirrored to MT5 by `bots/us30-orb-bot.mjs` and stamped with magic
+`30042001`. The monitor reads those MT5 deals rather than TV's `ordersData()`
+because MT5 carries P&L, commission, and swap. Other strategies (Regime
+Switch, V8 MWP) have similar TV→MT5 bridge bots, but their primary registry
+entry tracks the MT5 EA directly.
 
 **Venue notes:** `us30_vwap` trades MT5 only because the strategy does not
 replicate cleanly on TradingView's commission/slippage model. `us30_orb_reversal`
-trades TradingView only because the 30-minute bar close triggers don't map
-well to MT5 Strategy Tester spreads.
+trades on TradingView only because the 30-minute bar-close triggers don't map
+well to the MT5 Strategy Tester. HSDM and iter75 are MT5-native; both are
+registered in baseline-only mode and will start producing live metrics as
+soon as their EAs are running on the broker.
+
+The authoritative registry is `monitor/config/strategies.json`.
 
 ---
 
@@ -78,6 +94,7 @@ well to MT5 Strategy Tester spreads.
 │  - checks TV CDP on :9222            │
 │  - starts MT5 MCP if down            │
 │  - ensures baselines.json exists     │
+│  - refreshes {US30,NAS100} LIVE.csv  │
 └──────────┬───────────────────────────┘
            │
            ▼
@@ -85,7 +102,7 @@ well to MT5 Strategy Tester spreads.
 │  monitor/collect_live.mjs            │
 │  - TV: CDP → ordersData() → trades   │
 │  - MT5: MCP get_deals → trades       │
-│  - filters by baseline end date      │
+│  - filters by magic + baseline date  │
 │  - writes state.json                 │
 └──────────┬───────────────────────────┘
            │
@@ -104,7 +121,7 @@ well to MT5 Strategy Tester spreads.
 │  agents/daily_run.md                 │
 │  → agents/diagnose.md                │
 │  → remediate_tweak.md OR             │
-│    remediate_rebuild.md              │
+│    remediate_rebuild.md  (uses /goal)│
 └──────────────────────────────────────┘
 ```
 
@@ -113,8 +130,8 @@ well to MT5 Strategy Tester spreads.
 ## Breach rules
 
 Four rules fire any time the live period diverges meaningfully from the
-frozen baseline. Minimum trade counts gate each rule so that an empty period
-never creates a false positive.
+frozen baseline. Minimum trade counts gate each rule so an empty period never
+creates a false positive.
 
 | Rule | Threshold | Min trades |
 |---|---|---|
@@ -134,12 +151,14 @@ diagnosis pipeline. All rule implementations live in
 ### Languages and runtimes
 
 - **Node.js (ES modules)** — live trade collection, breach detection, CDP and
-  MT5 JSON-RPC clients
-- **Python 3.11+** — baseline xlsx parsing via `openpyxl`, and Python-mirror
-  backtesters for MT5 strategies (built lazily on first breach)
-- **Bash** — scheduler preflight
-- **Pine Script v6** — TradingView strategies (source in `baselines/tradingview/*/code/`)
-- **MQL5** — MetaTrader 5 EAs (source in `baselines/mt5/*/code/`)
+  MT5 JSON-RPC clients, the dashboard API
+- **Python 3.11+** — baseline xlsx parsing via `openpyxl`, plus the
+  per-strategy Python backtest mirrors in `monitor/mt5_mirror/` (built lazily
+  on first breach for any MT5 strategy)
+- **Bash** — scheduler preflight, EOD entry point, persistent loop, drill
+- **Pine Script v6** — TradingView strategies (`baselines/tradingview/*/code/`)
+- **MQL5** — MetaTrader 5 EAs (`baselines/mt5/*/code/`)
+- **Vite + React + Express** — dashboard (`dashboard/`)
 
 ### External interfaces
 
@@ -149,8 +168,16 @@ diagnosis pipeline. All rule implementations live in
 - **MetaTrader 5** via the `metatrader-mcp-server` package running under Wine
   on macOS. The server exposes streamable-HTTP JSON-RPC on `127.0.0.1:18080`,
   providing `get_deals`, `get_candles_latest`, `get_account_info`, and related
-  tools. It has no strategy tester tool, so MT5 backtesting uses Python
-  mirrors instead.
+  tools.
+
+### Architectural constraint
+
+The MT5 MCP exposes **no strategy-tester tool**. MT5 backtests for tweak
+verification and rebuild iterations therefore run through Python mirror
+backtesters in `monitor/mt5_mirror/`, faithful translations of the MQL5 EAs
+that read the raw M1 CSV data. The first mirror lives in
+`monitor/mt5_mirror/s2_momentum_burst.py`; new mirrors are built lazily on
+the first breach that needs one.
 
 ---
 
@@ -158,54 +185,63 @@ diagnosis pipeline. All rule implementations live in
 
 ```
 .
-├── CLAUDE.md               Project context loaded by Claude sessions
-├── README.md               This file
-├── .env.example            Template for MT5 credentials + ports
-├── .gitignore
-├── package.json            npm scripts: parse, collect, check, monitor
+├── CLAUDE.md                Project context loaded by Claude sessions
+├── README.md                This file
+├── AGENTS.md                Stale duplicate of an older CLAUDE.md (planned cleanup)
+├── .env.example             Template for MT5 credentials + ports
+├── .gitignore               Excludes baselines/, bots/, secrets, generated state
+├── .mcp.json                Declares the tradingview + metatrader MCP servers
+├── package.json             npm scripts: parse, collect, check, monitor, dashboard
 │
-├── agents/                 Claude agent prompts for the daily loop
-│   ├── daily_run.md        Top-level orchestration
-│   ├── diagnose.md         Failure analysis (regime shift, trade clustering)
-│   ├── remediate_tweak.md  Parameter tuning (max 3 attempts)
-│   └── remediate_rebuild.md Full rebuild (follows dev guidelines end-to-end)
+├── agents/                  Claude agent prompts for the daily loop
+│   ├── daily_run.md                   Top-level orchestration
+│   ├── diagnose.md                    Failure analysis (regime shift, clustering)
+│   ├── remediate_tweak.md             Parameter tuning (max 3 attempts)
+│   ├── remediate_rebuild.md           Rebuild dispatcher — routes by symbol via /goal
+│   ├── strategy-dev-goal-us30.md      Strategy-design goal for US30 rebuilds
+│   └── strategy-dev-goal-nas100.md    Strategy-design goal for NAS100 rebuilds
 │
-├── baselines/              Frozen backtest exports, source of truth
-│   ├── tradingview/
-│   │   ├── S2 MOMENTUM BURST NAS100/{code,performance}/
-│   │   ├── REGIME SWITCH RECLAIM NAS100/{code,performance}/
-│   │   ├── RAST V20 US30/{code,performance}/
-│   │   └── US30 ORB REVERSAL/{code,performance}/
-│   └── mt5/
-│       ├── S2 MOMENTUM BURST NAS100/{code,performance}/
-│       ├── REGIME SWITCH RECLAIM NAS100/{code,performance}/
-│       ├── RAST V20 US30/{code,performance}/
-│       └── US30 VWAP/{code,performance}/
+├── baselines/   (gitignored, proprietary)
+│   ├── tradingview/<strategy>/{code,performance}/
+│   └── mt5/<strategy>/{code,performance}/
 │
-├── bots/
-│   └── regime-switch-bot.mjs   TV→MT5 live mirror for Regime Switch Reclaim
+├── bots/        (gitignored, proprietary)
+│   ├── regime-switch-bot.mjs          TV→MT5 mirror for Regime Switch Reclaim
+│   ├── us30-orb-bot.mjs               TV→MT5 mirror for US30 ORB Reversal
+│   └── nas100-v8-mwp-bot.mjs          TV→MT5 mirror for NAS100 V8 MWP
+│
+├── dashboard/   (Vite + React + Express)
+│   ├── server.mjs                     API server reading monitor state.json + history
+│   ├── package.json                   dev:web, dev:api, build, start, preview
+│   └── …
 │
 ├── docs/
-│   └── strategy-dev-guidelines.md   Rebuild contract (70/30 split, DSR, vault)
+│   └── strategy-dev-guidelines.md     Long-form rebuild contract (still referenced by remediate_tweak.md)
 │
-├── monitor/                EOD monitor runtime
+├── monitor/                 EOD monitor runtime
 │   ├── config/
-│   │   ├── strategies.json        Strategy registry
-│   │   └── mt5_tools.json         (generated) MT5 MCP tool cache
+│   │   ├── strategies.json            Strategy registry (the source of truth)
+│   │   └── mt5_tools.json             (generated) MT5 MCP tool cache
 │   ├── lib/
-│   │   ├── cdp.mjs                TradingView CDP client
-│   │   ├── mt5_rpc.mjs            MT5 MCP JSON-RPC client
-│   │   └── metrics.mjs            Pure metric + breach functions
-│   ├── parse_baselines.py         Parse xlsx → baselines.json
-│   ├── collect_live.mjs           Pull live trades → state.json
-│   ├── check_breach.mjs           Compare state vs baselines → history
-│   ├── baselines.json             (generated)
-│   ├── state.json                 (generated)
-│   ├── history/                   (generated) daily archive + log
-│   └── events/                    (generated) per-breach event folders
+│   │   ├── cdp.mjs                    TradingView CDP client
+│   │   ├── mt5_rpc.mjs                MT5 MCP JSON-RPC client
+│   │   └── metrics.mjs                Pure metric + breach functions
+│   ├── mt5_mirror/                    Python mirrors of MT5 EAs for offline backtest
+│   │   └── s2_momentum_burst.py
+│   ├── parse_baselines.py             Parse xlsx → baselines.json
+│   ├── collect_live.mjs               Pull live trades → state.json
+│   ├── check_breach.mjs               Compare state vs baselines → history
+│   ├── update_live_data.mjs           Nightly M1 bar append to *.LIVE.csv
+│   ├── baselines.json                 (generated)
+│   ├── state.json                     (generated)
+│   ├── history/                       (generated) daily archive + log
+│   └── events/                        (generated) per-breach event folders
 │
 └── scheduler/
-    └── start_daily.sh             Preflight script for the daily cron
+    ├── start_daily.sh                 Preflight: TV CDP + MT5 MCP + LIVE.csv refresh
+    ├── run_eod.sh                     Standalone EOD entry point
+    ├── loop.sh                        Persistent loop (waits until 21:30 UTC each weekday)
+    └── run_drill.sh                   Synthetic breach drill for end-to-end testing
 ```
 
 ---
@@ -221,7 +257,7 @@ diagnosis pipeline. All rule implementations live in
 - **`metatrader-mcp-server`** installed inside the Wine Python environment
 - **Claude Code** CLI for the daily agent run
 
-A working `chrome-remote-interface` dependency is installed via npm.
+`chrome-remote-interface` is installed via npm.
 
 ---
 
@@ -231,13 +267,16 @@ A working `chrome-remote-interface` dependency is installed via npm.
 git clone https://github.com/Mbella19/AI-HedgeFund.git
 cd AI-HedgeFund
 
-# Node dependencies
+# Node dependencies (monitor)
 npm install
 
 # Python dependencies
 pip install openpyxl
 
-# Copy the env template and fill in your broker credentials
+# Dashboard (separate install)
+cd dashboard && npm install && cd ..
+
+# Copy the env template and fill in broker credentials
 cp .env.example .env
 $EDITOR .env
 ```
@@ -255,9 +294,9 @@ MT5_MCP_PORT=18080
 TV_CDP_PORT=9222
 ```
 
-`.env` is gitignored. Never commit it. Credentials flow from `.env` into
-`scheduler/start_daily.sh`, which launches the MT5 MCP server with them when
-the server is not already running.
+`.env` is gitignored. Credentials flow from `.env` into
+`scheduler/start_daily.sh`, which launches the MT5 MCP server when the server
+is not already running. **Never hardcode credentials in scripts or prompts.**
 
 ---
 
@@ -265,31 +304,35 @@ the server is not already running.
 
 All strategies are declared in `monitor/config/strategies.json`. Each entry
 maps a strategy ID to its venue, symbol, timeframe, magic number, baseline
-xlsx path, source file path, and Pine strategy display name:
+xlsx path, source file path, and (for TV) the on-chart Pine strategy display
+name:
 
 ```json
 {
-  "id": "s2_momentum_burst_tv",
-  "name": "S2 Momentum Burst",
-  "venue": "tradingview",
-  "symbol": "PEPPERSTONE:NAS100",
-  "timeframe": "5",
-  "magic": null,
-  "baseline_xlsx": "baselines/tradingview/S2 MOMENTUM BURST NAS100/performance/...xlsx",
-  "source_file": "baselines/tradingview/S2 MOMENTUM BURST NAS100/code/S2 MOMENTUM BURST.txt",
-  "pine_strategy_name": "S2: 5b Momentum Burst - Declining Risk"
+  "id": "hsdm_mt5",
+  "name": "HSDM",
+  "venue": "mt5",
+  "symbol": "NAS100",
+  "timeframe": "M1",
+  "magic": 314159,
+  "baseline_xlsx": "baselines/mt5/HSDM NAS100/performance/HSDM.xlsx",
+  "source_file": "baselines/mt5/HSDM NAS100/code/HSDM.txt",
+  "pine_strategy_name": null
 }
 ```
 
 To add a new strategy:
 
-1. Drop the xlsx export into
-   `baselines/<venue>/<strategy>/performance/`.
+1. Drop the xlsx export into `baselines/<venue>/<strategy>/performance/`.
 2. Drop the Pine or MQL5 source into `baselines/<venue>/<strategy>/code/`.
-3. Add an entry to `monitor/config/strategies.json` with the venue, symbol,
+3. Add an entry to `monitor/config/strategies.json` — venue, symbol,
    timeframe, magic (MT5 only), and — for TV — the exact `pine_strategy_name`
    as it appears on the chart.
 4. Regenerate baselines: `npm run parse`.
+
+The `baselines/` directory is **gitignored**, so the artefacts in step 1–2
+stay local. The registry entry in step 3, however, **is** tracked — commit it
+even when the source stays local.
 
 ---
 
@@ -297,21 +340,30 @@ To add a new strategy:
 
 ### One-shot scripts
 
-```bash
-npm run parse        # parse xlsx → monitor/baselines.json
-npm run collect      # pull live trades → monitor/state.json
-npm run collect:dry  # same, no file writes
-npm run check        # compare state vs baselines, archive to history
-npm run monitor      # full EOD pipeline: preflight + collect + check
-npm run preflight    # just the MCP preflight
-```
+| Command | What it runs |
+|---|---|
+| `npm run parse` | `python3 monitor/parse_baselines.py` |
+| `npm run collect` | `node monitor/collect_live.mjs` |
+| `npm run collect:dry` | Same, no file writes |
+| `npm run check` | `node monitor/check_breach.mjs` |
+| `npm run monitor` | Full EOD: preflight + collect + check |
+| `npm run preflight` | Just the MCP preflight |
+| `npm run eod` | `bash scheduler/run_eod.sh` (standalone EOD) |
+| `npm run start` | `bash scheduler/loop.sh` (persistent loop) |
+| `npm run update-data` | Append fresh M1 bars to `{US30,NAS100} LIVE.csv` |
+| `npm run update-data:bootstrap` | Bootstrap version (20 000 bars per symbol) |
+| `npm run dashboard` | Dashboard in dev mode (Vite + API) |
+| `npm run dashboard:build` | Production build |
+| `npm run dashboard:prod` | Production server (`NODE_ENV=production`) |
 
 ### End-of-day autonomous run
 
-The daily loop is triggered by a Claude scheduled job or by running the
+The daily loop is triggered by a Claude scheduled job, by `bash
+scheduler/run_eod.sh`, or by running the
 [`agents/daily_run.md`](agents/daily_run.md) prompt manually. The agent:
 
-1. Runs `scheduler/start_daily.sh` to bring up MCP servers.
+1. Runs `scheduler/start_daily.sh` to bring up MCP servers and refresh the
+   LIVE CSVs.
 2. Runs `npm run collect && npm run check`.
 3. On a clean run, logs "all clear" to `monitor/history/daily_log.md` and
    exits.
@@ -322,6 +374,20 @@ The daily loop is triggered by a Claude scheduled job or by running the
    - Runs the selected remediation path.
    - Writes a summary to `monitor/history/<YYYY-MM-DD>-summary.md`.
 
+### Persistent loop
+
+`bash scheduler/loop.sh` (or `npm run start`) blocks until 21:30 UTC each
+weekday, runs the full pipeline, and launches Claude Code on breach. Leave it
+in a screen/tmux session if you don't want to rely on cron.
+
+### Synthetic drill
+
+`bash scheduler/run_drill.sh <strategy_id>` writes a sandbox state with a
+forced `hard_max_dd` breach and launches Claude Code in drill mode — useful
+for testing diagnose/remediate end-to-end without waiting for a real failure.
+Output is routed to `monitor/events/drill-<ts>/`; no production state is
+mutated.
+
 ---
 
 ## Daily pipeline
@@ -330,11 +396,12 @@ The daily loop is triggered by a Claude scheduled job or by running the
 
 Verifies TradingView CDP is alive on `TV_CDP_PORT` and MT5 MCP is responding
 on `MT5_MCP_PORT`. If MT5 MCP is down, launches it with credentials from
-`.env` via Wine. Exits once both services are reachable.
+`.env` via Wine. Refreshes the `{US30,NAS100} LIVE.csv` files via
+`monitor/update_live_data.mjs`. Exits once both services are reachable.
 
 ### 2. Baseline parsing — `monitor/parse_baselines.py`
 
-Parses all eight baseline xlsx files into a unified `baselines.json`:
+Parses each registered baseline xlsx into a unified `baselines.json`:
 
 - **TradingView format**: five sheets (Performance, Trades analysis,
   Risk-adjusted performance, List of trades, Properties). Max consecutive
@@ -348,20 +415,22 @@ Parses all eight baseline xlsx files into a unified `baselines.json`:
 
 - **TradingView**: connects to CDP on port 9222, walks the chart's data
   sources to find the named Pine strategy, reads its `ordersData()` array,
-  and pairs orders into trades. Trades with indices beyond the baseline's
-  total trade count are treated as "live" trades (i.e., new activity since
-  the baseline was frozen).
+  and pairs orders into trades. Trades beyond the baseline's total count are
+  treated as "live" (new activity since the baseline was frozen).
 - **MT5**: calls `get_deals` via the MT5 MCP with `from_date` set to the
   baseline's end date. Deals are filtered by the strategy's magic number and
-  paired entry/exit into trades. P&L includes profit + commission + swap +
-  fee.
+  paired entry/exit into trades. P&L = profit + commission + swap + fee.
+
+For TV strategies with a TV→MT5 bridge bot, `mt5_bridge_magic` overrides the
+TV ordersData path and reads MT5 deals instead — richer P&L data, single
+source of truth.
 
 Per-strategy live metrics are written to `monitor/state.json`.
 
 ### 4. Breach check — `monitor/check_breach.mjs`
 
 Applies the four breach rules from `monitor/lib/metrics.mjs` per strategy.
-Writes the per-strategy breach array back into `state.json`, archives a
+Writes per-strategy breach arrays back into `state.json`, archives a
 timestamped copy under `monitor/history/`, appends a one-line summary to
 `monitor/history/daily_log.md`, and exits with code 1 if any strategy
 breached.
@@ -383,8 +452,8 @@ calculations, and entry/exit rules must remain untouched.
 **Verification:** the tweaked strategy must pass on **both** the original
 baseline period **and** the live/failure window before it is committed. For
 TradingView strategies this uses `pine_set_source` + `pine_smart_compile` +
-`data_get_strategy_results` round trips. For MT5 strategies the Python
-mirror backtester runs against the raw M1 CSV data in
+`data_get_strategy_results` round trips. For MT5 strategies the matching
+Python mirror in `monitor/mt5_mirror/` runs against the raw M1 CSV data in
 `/Users/gervaciusjr/Desktop/strategy dev v3/Data/`.
 
 Successful tweaks are logged to
@@ -397,19 +466,30 @@ Used when the tweak budget is exhausted, when diagnosis shows the edge is
 structurally gone, or when two tweak attempts have failed in the last 30
 days.
 
-The rebuild follows [`docs/strategy-dev-guidelines.md`](docs/strategy-dev-guidelines.md)
-end-to-end:
+The dispatcher reads the failed strategy's symbol from
+`monitor/config/strategies.json`, loads the matching goal file
+(`agents/strategy-dev-goal-us30.md` or
+`agents/strategy-dev-goal-nas100.md`), and invokes the rebuild as a **`/goal`
+slash-command** so Claude keeps iterating until the pass condition is met —
+no early exit. The goal files codify:
 
 - 70/30 chronological train/validation split (no shuffle)
-- Max 15 iterations against the validation slice
-- Twelve validation criteria (max DD < 15%, Sharpe > 1.0 / 0.7, PF > 1.3 /
-  1.1, DSR > 0.95, etc.)
+- No iteration cap; every validation touch logged for the DSR trial count
+- Twelve validation criteria (MaxDD < 15%, Sharpe > 1.0 / 0.7, PF > 1.3 /
+  1.1, etc.)
+- Deflated Sharpe Ratio confidence > 0.95
 - Sealed vault test (touch once)
 - 800–2000 total trades, realistic commission/slippage/spread
-- Output lands in `monitor/events/<strategy_id>-<date>/proposed_new/`
+- Output to `monitor/events/<strategy_id>-<date>/proposed_new/` with **both**
+  `.pine` and `.mq5` versions
 
-**Rebuilds are never auto-deployed.** They are written to the proposed folder
-and flagged in the daily summary for the user to review and approve.
+**Rebuilds are never auto-deployed.** They land in `proposed_new/` and are
+flagged in the daily summary for the user to review and approve.
+
+The long-form rebuild contract in
+[`docs/strategy-dev-guidelines.md`](docs/strategy-dev-guidelines.md) is still
+referenced by the tweak path's MQL5 translation notes, but the rebuild flow
+itself runs off the short goal prompts.
 
 ---
 
@@ -419,19 +499,18 @@ Backtesting and rebuilds use M1 OHLCV CSVs versioned outside this repo:
 
 ```
 /Users/gervaciusjr/Desktop/strategy dev v3/Data/
-├── US30 TRAINING.csv       136 MB, M1 bars, frozen reference (2019–2025)
+├── US30 TRAINING.csv       136 MB, M1 bars, frozen reference (2019–2026)
 ├── US30 LIVE.csv           (auto-grown) appended nightly with fresh bars
 ├── us30 tru oos.csv         14 MB, sealed vault (touch once)
-├── NAS100 TRAINING.csv     134 MB, M1 bars, frozen reference (2019–2025)
+├── NAS100 TRAINING.csv     134 MB, M1 bars, frozen reference (2019–2026)
 ├── NAS100 LIVE.csv         (auto-grown) appended nightly with fresh bars
 └── NAS100 TRUE OOS.csv      14 MB, sealed vault (touch once)
 ```
 
-**TRAINING csvs are frozen snapshots.** They never change after export.
+**TRAINING csvs are frozen snapshots** — they never change after export.
 
-**LIVE csvs are append-only** and extended every night by
-`monitor/update_live_data.mjs`, which runs as part of the preflight step in
-`scheduler/start_daily.sh`. The updater:
+**LIVE csvs are append-only**, extended every night by
+`monitor/update_live_data.mjs` (run by the preflight). The updater:
 
 1. Reads the last timestamp from `{SYMBOL} LIVE.csv` (or seeds from
    `{SYMBOL} TRAINING.csv` on first run).
@@ -441,23 +520,23 @@ Backtesting and rebuilds use M1 OHLCV CSVs versioned outside this repo:
 4. Appends them in the same tab-separated MT5 format so the training CSV
    loader works unmodified.
 
-Python backtesters concatenate `TRAINING.csv` + `LIVE.csv` at load time. The
+Python backtesters concatenate `TRAINING.csv + LIVE.csv` at load time. The
 gap between "last bar in the data" and "now" therefore never exceeds 24
-hours — the duration of one day's scheduler run.
+hours.
 
 For timeframes above M1, the Python backtester resamples in-memory (group
-every 5 rows for M5, every 30 rows for 30m, using standard OHLCV
+every 5 rows for M5, every 30 rows for M30, etc., using standard OHLCV
 aggregation: first open, max high, min low, last close, sum volume).
 
-For bars even fresher than the last LIVE update (e.g., the current session
-when diagnosing an intraday breach), the agent can call MT5
-`get_candles_latest` or TradingView `data_get_ohlcv` directly and stitch in
-memory, deduplicating by timestamp.
+For bars fresher than the last LIVE update (e.g., the current session when
+diagnosing an intraday breach), the agent can call MT5 `get_candles_latest`
+or TV `data_get_ohlcv` directly and stitch in memory, deduplicating by
+timestamp.
 
 ### Manual commands
 
 ```bash
-npm run update-data              # nightly update (≈5000 bars per symbol)
+npm run update-data              # nightly update (~5000 bars per symbol)
 npm run update-data:bootstrap    # initial bootstrap (20000 bars per symbol)
 ```
 
@@ -465,10 +544,10 @@ npm run update-data:bootstrap    # initial bootstrap (20000 bars per symbol)
 
 ## MCP servers
 
-The project connects to two MCP servers, declared in `.mcp.json`:
+Both servers are declared in `.mcp.json`:
 
-**tradingview** — stdio transport, 78 tools for reading and controlling the
-live TradingView Desktop chart. Key tools used:
+**tradingview** — stdio transport, ~78 tools for reading and controlling the
+live TradingView Desktop chart. Key tools used by the monitor:
 
 - `tv_health_check`, `tv_launch`
 - `chart_get_state`, `tab_list`, `tab_switch`
@@ -477,41 +556,71 @@ live TradingView Desktop chart. Key tools used:
 - `pine_get_source`, `pine_set_source`, `pine_smart_compile`,
   `pine_get_errors`
 
-**metatrader** — streamable-http transport on `127.0.0.1:18080`, 25 tools
-exposed by `metatrader-mcp-server` running under Wine. Key tools used:
+**metatrader** — streamable-http transport on `127.0.0.1:18080`, ~25 tools
+from `metatrader-mcp-server` running under Wine. Key tools:
 
 - `get_account_info`
 - `get_deals`, `get_candles_latest`
-- position and order management tools (used by `bots/regime-switch-bot.mjs`
-  but not by the monitor itself)
+- position and order management tools (used by the bridge bots in `bots/`,
+  not by the monitor itself)
 
-The MT5 MCP has **no strategy tester tool**. This is the primary architectural
-constraint: MT5 backtesting in the tweak and rebuild paths uses Python
-mirrors, built lazily on the first breach that needs one.
+The MT5 MCP has **no strategy tester tool** — see the architectural
+constraint above. MT5 backtesting in the tweak and rebuild paths uses the
+Python mirrors in `monitor/mt5_mirror/`.
 
 ---
 
-## Security
+## Dashboard
 
-- All broker credentials live in `.env`, which is gitignored.
-- `.env.example` is a template with no real values.
-- `.claude/settings.local.json` is gitignored because it may contain
-  credentials in bash command history.
-- Generated state files (`monitor/baselines.json`, `monitor/state.json`,
-  `monitor/history/`, `monitor/events/`) are gitignored — nothing with live
-  trade data or broker state is committed.
-- If a credential has ever been committed to a public repository, rotate it
-  in the broker portal immediately. Git history is durable.
+A standalone Vite + React + Express app in `dashboard/`. Reads
+`monitor/baselines.json`, `monitor/state.json`, and `monitor/history/` via a
+small Express API (`dashboard/server.mjs`) and renders per-strategy charts,
+breach status, and event timelines. Phone-installable as a PWA.
+
+```bash
+npm run dashboard         # dev: Vite web + Express API concurrent
+npm run dashboard:build   # production build
+npm run dashboard:prod    # production server
+```
+
+The dashboard is independent of the EOD agent loop — it only reads the
+artefacts the monitor produces.
+
+---
+
+## Security & gitignore policy
+
+This repo publicly hosts the monitor framework but **not the strategies**.
+The following are excluded by `.gitignore`:
+
+- **Proprietary IP:** `baselines/` (all xlsx exports + Pine/MQL5 source) and
+  `bots/` (TV→MT5 bridge bots). Anyone running this monitor brings their own
+  strategies.
+- **Generated state:** `monitor/baselines.json`, `monitor/state.json`,
+  `monitor/history/`, `monitor/events/`, `monitor/config/mt5_tools.json`,
+  `monitor/mt5_mirror/__pycache__/`.
+- **Credentials:** `.env`, `.env.local`, `*.secret`,
+  `.claude/settings.local.json`. Broker credentials are loaded from `.env`
+  into `scheduler/start_daily.sh` at runtime — never hardcoded in scripts or
+  prompt files.
+- **Editor / OS noise:** `.DS_Store`, `.vscode/`, `.idea/`, `*.swp`, `*.log`.
+
+The registry in `monitor/config/strategies.json` **is** tracked, so adding a
+strategy always requires a commit even when the artefacts in `baselines/`
+stay local.
+
+If a credential has ever been committed to a public repository, rotate it in
+the broker portal immediately. Git history is durable.
 
 ---
 
 ## Contributing
 
-This is a personal trading infrastructure project. External contributions
-are not currently accepted, but the code is published openly as a reference
-for anyone building a similar EOD monitor for a multi-venue strategy
-portfolio. Patches that improve portability, documentation, or
-language-specific safety are welcome via issue or PR.
+This is a personal trading-infrastructure project. External contributions are
+not currently accepted, but the code is published openly as a reference for
+anyone building a similar EOD monitor for a multi-venue strategy portfolio.
+Patches improving portability, documentation, or language-specific safety are
+welcome via issue or PR.
 
 ---
 
