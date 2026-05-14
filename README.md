@@ -680,5 +680,9 @@ welcome via issue or PR.
 
 ## License
 
-No license specified. All rights reserved by the author until a license is
-added.
+[MIT](LICENSE) — © 2026 GervaciusJR.
+
+The MIT license covers the **framework** code in this repository: the EOD
+monitor, agent prompts, dashboard, schedulers, and supporting scripts. It
+does **not** grant any rights to the strategies, EAs, or bridge bots —
+those are gitignored (`baselines/`, `bots/`) and remain proprietary.

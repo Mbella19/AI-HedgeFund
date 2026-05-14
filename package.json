@@ -4,6 +4,8 @@
   "description": "End-of-day autonomous monitor for TradingView + MT5 quant strategies with breach detection and auto-remediation.",
   "type": "module",
   "private": true,
+  "license": "MIT",
+  "author": "GervaciusJR",
   "scripts": {
     "parse": "python3 monitor/parse_baselines.py",
     "collect": "node monitor/collect_live.mjs",
