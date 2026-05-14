@@ -517,6 +517,18 @@ no early exit. The goal files codify:
 - Output to `monitor/events/<strategy_id>-<date>/proposed_new/` with **both**
   `.pine` and `.mq5` versions
 
+**Workspace discipline.** Each rebuild gets its own event dir under
+`monitor/events/<strategy_id>-<date>/`. Inside it:
+
+- `workspace/` — all scratch: trial strategies, failed iterations, plots,
+  intermediate CSVs. Disposable.
+- `proposed_new/` — only the 9 canonical artifacts. The deliverable.
+
+When the goal passes, the rebuild runs
+`bash scheduler/finalize_rebuild.sh monitor/events/<id>-<date>`, which
+verifies every canonical artifact and then deletes `workspace/` recursively.
+If anything is missing, it refuses to clean and tells you what to fix.
+
 **Rebuilds are never auto-deployed.** They land in `proposed_new/` and are
 flagged in the daily summary for the user to review and approve.
 

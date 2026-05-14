@@ -75,7 +75,13 @@ Implemented in `monitor/lib/metrics.mjs`. Hard rules fire when live > baseline; 
 - US30 → `agents/strategy-dev-goal-us30.md`
 - NAS100 → `agents/strategy-dev-goal-nas100.md`
 
-`/goal` keeps Claude iterating until the pass condition (12 criteria + DSR > 0.95 + vault) is met — no early exit. Output goes to `monitor/events/<id>-<date>/proposed_new/` and always includes both `.pine` and `.mq5` versions. Never auto-deployed; flagged in the daily summary for user review.
+`/goal` keeps Claude iterating until the pass condition (12 criteria + DSR > 0.95 + vault) is met — no early exit.
+
+**Workspace discipline.** Each rebuild gets its own event dir under `monitor/events/<id>-<date>/`. Inside it:
+- `workspace/` — all scratch (failed iterations, trial scripts, plots, intermediate CSVs). Disposable.
+- `proposed_new/` — the 9 canonical artifacts only, including both `.pine` and `.mq5`.
+
+When the goal passes, Claude runs `bash scheduler/finalize_rebuild.sh monitor/events/<id>-<date>` — verifies every canonical artifact is present, then deletes `workspace/`. The "FINALIZE COMPLETE" output is the signal `auto_resume.sh` watches for to stop. Never auto-deployed; the user reviews `proposed_new/validation_report.md` before replacing the running strategy.
 
 ## Historical data (in-repo, gitignored)
 

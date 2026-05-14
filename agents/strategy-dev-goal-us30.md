@@ -45,6 +45,20 @@ After 12+DSR pass: lock frozen_strategy.json, open vault once, run unchanged. Re
 # DO NOT
 No vault peek/iteration before pass. No p-hacking or val tuning. No success claim pre-vault. No silent drops. No future-bar indicators. No curve-fit year filters. No shuffled time split. No giving up — keep inventing till something passes.
 
+# WORKSPACE & CLEANUP — KEEP THE PROJECT TIDY
+This work happens inside the main project. Use TWO subdirectories under
+monitor/events/<strategy_id>-<YYYYMMDD>/ (the dispatcher creates the event dir):
+
+  workspace/      ALL scratch: trial strategies, failed iterations, plot
+                  PNGs, debug scripts, intermediate CSVs. Disposable.
+  proposed_new/   ONLY the 7 canonical artifacts above. The deliverable.
+
+When the goal passes (12 criteria + DSR + vault), before declaring done, run:
+  bash scheduler/finalize_rebuild.sh monitor/events/<strategy_id>-<YYYYMMDD>
+The script verifies proposed_new/ contains every canonical artifact and then
+wipes workspace/. Refuses to clean if anything is missing — fix the gap and
+rerun. The goal is not complete until finalize prints "FINALIZE COMPLETE".
+
 # AFTER
 Paper-trade earned, not live. 60–90 days demo first — my step.
 

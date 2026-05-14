@@ -67,7 +67,7 @@ RESUME_PROMPT="${RESUME_PROMPT:-continue with the goal}"
 
 # Regex patterns (case-insensitive) used to classify the last ~200 log lines
 RATE_PATTERNS='rate.?limit|usage.?limit|5.?hour.?limit|too many requests|429|reset.?in|quota.?exceeded'
-DONE_PATTERNS='goal.?(complete|completed|satisfied|achieved|met)|vault.?test.?passed|all.?12.?criteria.?pass'
+DONE_PATTERNS='finalize.complete|goal.?(complete|completed|satisfied|achieved|met)|vault.?test.?passed|all.?12.?criteria.?pass'
 
 # ─── Log setup ──────────────────────────────────────────────────────────────
 mkdir -p monitor/history

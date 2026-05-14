@@ -57,8 +57,19 @@ Always produce BOTH a Pine Script (.pine) and an MQL5 (.mq5) version of the
 final frozen strategy, regardless of which venue triggered the breach. Both
 trade the same instrument as the strategy being replaced.
 
-# OUTPUT LOCATION
-Write ALL artifacts under monitor/events/<strategy_id>-<YYYYMMDD>/proposed_new/:
+# WORKSPACE VS FINAL OUTPUT (HARD RULE)
+Use TWO subdirectories under monitor/events/<strategy_id>-<YYYYMMDD>/:
+
+  workspace/      — ALL scratch work goes here: trial strategies, failed
+                    iterations, intermediate CSVs, plot PNGs, debug scripts,
+                    notebooks, anything you might delete tomorrow. The
+                    finalize step will wipe this directory entirely.
+
+  proposed_new/   — ONLY the canonical artifacts listed below. Nothing else
+                    survives long-term outside this folder. Treat
+                    proposed_new/ as the deliverable.
+
+Canonical artifacts (MUST exist in proposed_new/ before finalize will run):
 - data_split.json
 - strategy_novelty.md
 - strategy.py
@@ -68,6 +79,18 @@ Write ALL artifacts under monitor/events/<strategy_id>-<YYYYMMDD>/proposed_new/:
 - mql5_translation_notes.md
 - strategy.pine
 - strategy.mq5
+
+# FINALIZE STEP (RUN BEFORE DECLARING THE GOAL DONE)
+Once all 12 criteria + DSR + vault pass AND all 9 canonical artifacts are
+written, run:
+
+  bash scheduler/finalize_rebuild.sh monitor/events/<strategy_id>-<YYYYMMDD>
+
+The script verifies the 9 canonical files exist in proposed_new/ and then
+deletes workspace/ recursively. If anything is missing, it refuses to clean
+and tells you what to fix. Goal completion is not real until finalize
+returns success — re-paste its "FINALIZE COMPLETE" output verbatim in your
+final message so the auto-resume wrapper sees the completion signal.
 
 # NO AUTO-DEPLOY
 The rebuilt strategy goes to proposed_new/ only. Flag it in the EOD summary
@@ -79,7 +102,8 @@ The goal forbids early exit. Keep inventing new families. Only after a
 genuinely exhausted search across distinct edge families (≥10 scrapped
 candidates, each on a different premise) may you write a postmortem to
 proposed_new/postmortem.md explaining what was tried and why nothing held —
-and even then, the goal stays open, not closed.
+and even then, the goal stays open, not closed. Do NOT run finalize in this
+state; workspace/ stays so you (or a later session) can resume.
 ```
 
 ## Why `/goal` (not a plain prompt)
