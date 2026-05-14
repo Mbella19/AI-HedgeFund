@@ -21,9 +21,7 @@ const CONFIG = resolve(MONITOR, "config");
 const LOOP_PID_FILE = resolve(MONITOR, "loop.pid.json");
 const LOOP_LOG_FILE = resolve(MONITOR, "loop.log");
 const BOTS_DIR = resolve(MONITOR, "bots");
-const DATA_DIR =
-  process.env.DATA_DIR ||
-  "/Users/gervaciusjr/Desktop/strategy dev v3/Data";
+const DATA_DIR = process.env.DATA_DIR || resolve(ROOT, "Data");
 
 // Bot registry — maps bot id → script path + state files.
 const BOTS = {

@@ -2,8 +2,8 @@
 Quant researcher. Design an intraday US30 strategy that survives OOS validation. Robustness > peak Sharpe.
 
 # DATA
-Train: /Users/gervaciusjr/Desktop/strategy dev v3/Data/US30 TRAINING.csv — split CHRONOLOGICALLY 70% train / 30% val (no shuffle). Boundaries → data_split.json before any code.
-Vault: /Users/gervaciusjr/Desktop/strategy dev v3/Data/us30 tru oos.csv — SEALED, touch ONCE at the end, strategy already frozen.
+Train: /Users/gervaciusjr/Desktop/Tradingview/Data/US30 TRAINING.csv — split CHRONOLOGICALLY 70% train / 30% val (no shuffle). Boundaries → data_split.json before any code.
+Vault: /Users/gervaciusjr/Desktop/Tradingview/Data/us30 tru oos.csv — SEALED, touch ONCE at the end, strategy already frozen.
 
 # VAULT RULE
 frozen_strategy.json written BEFORE opening vault. No post-vault tweaks — if tempted, run is dead. Honest fail > p-hacked pass.

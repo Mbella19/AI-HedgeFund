@@ -8,7 +8,7 @@ ten that score 3.0 and overfit.
 # DATA
 You have exactly two files:
 
-1. /Users/gervaciusjr/Desktop/strategy dev v3/Data/US30 TRAINING.csv
+1. /Users/gervaciusjr/Desktop/Tradingview/Data/US30 TRAINING.csv
    You must split this file CHRONOLOGICALLY into two slices BEFORE you write
    any strategy code:
        - TRAINING slice: first 70% of bars (by time, oldest first)
@@ -18,7 +18,7 @@ You have exactly two files:
    Save the slice boundaries (start/end timestamps of each slice) to
    data_split.json on the very first step, before any other work.
 
-2. /Users/gervaciusjr/Desktop/strategy dev v3/Data/us30 tru oos.csv
+2. /Users/gervaciusjr/Desktop/Tradingview/Data/us30 tru oos.csv
    This is the VAULT. SEALED. Touch exactly once, at the very end, after the
    strategy is frozen.
 

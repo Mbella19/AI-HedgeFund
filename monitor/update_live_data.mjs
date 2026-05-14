@@ -13,7 +13,7 @@
  *
  * Environment:
  *   DATA_DIR  — directory holding the training + live CSVs
- *               default: /Users/gervaciusjr/Desktop/strategy dev v3/Data
+ *               default: <repo-root>/Data
  */
 
 import {
@@ -22,12 +22,13 @@ import {
   writeFileSync,
 } from "fs";
 import { execSync } from "child_process";
-import { resolve } from "path";
+import { resolve, dirname } from "path";
+import { fileURLToPath } from "url";
 import { mt5Init, getCandles } from "./lib/mt5_rpc.mjs";
 
-const DATA_DIR =
-  process.env.DATA_DIR ||
-  "/Users/gervaciusjr/Desktop/strategy dev v3/Data";
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const REPO_ROOT = resolve(__dirname, "..");
+const DATA_DIR = process.env.DATA_DIR || resolve(REPO_ROOT, "Data");
 
 const SYMBOLS = [
   { symbol: "US30", training: "US30 TRAINING.csv", live: "US30 LIVE.csv" },

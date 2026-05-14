@@ -45,8 +45,8 @@ Since the MT5 MCP does not expose a strategy tester tool:
 5. Verify using the same criteria as TradingView
 
 **Historical data for the Python mirror backtester:**
-- US30 strategies: `/Users/gervaciusjr/Desktop/strategy dev v3/Data/US30 TRAINING.csv` (M1, 2019–2026)
-- NAS100 strategies: `/Users/gervaciusjr/Desktop/strategy dev v3/Data/NAS100 TRAINING.csv` (M1, 2019–2026)
+- US30 strategies: `/Users/gervaciusjr/Desktop/Tradingview/Data/US30 TRAINING.csv` (M1, 2019–2026)
+- NAS100 strategies: `/Users/gervaciusjr/Desktop/Tradingview/Data/NAS100 TRAINING.csv` (M1, 2019–2026)
 - Both are M1 bars. Resample to M5 (group 5 bars) or other timeframe as needed:
   - S2 Momentum Burst NAS100 → resample to M5
   - Regime Switch Reclaim NAS100 → use M1 directly

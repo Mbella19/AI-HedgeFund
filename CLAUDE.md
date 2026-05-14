@@ -77,9 +77,9 @@ Implemented in `monitor/lib/metrics.mjs`. Hard rules fire when live > baseline; 
 
 `/goal` keeps Claude iterating until the pass condition (12 criteria + DSR > 0.95 + vault) is met — no early exit. Output goes to `monitor/events/<id>-<date>/proposed_new/` and always includes both `.pine` and `.mq5` versions. Never auto-deployed; flagged in the daily summary for user review.
 
-## Historical data (external, not in repo)
+## Historical data (in-repo, gitignored)
 
-`/Users/gervaciusjr/Desktop/strategy dev v3/Data/` holds M1 OHLCV CSVs (tab-separated MT5 format) for 2019–present:
+`Data/` at the repo root (~300 MB, gitignored) holds M1 OHLCV CSVs in tab-separated MT5 format for 2019–present:
 
 - `{US30,NAS100} TRAINING.csv` — frozen reference, never modified
 - `{US30,NAS100} LIVE.csv` — append-only, extended nightly by `monitor/update_live_data.mjs`
@@ -93,6 +93,7 @@ The repo publicly hosts the monitor framework but **not the strategies**. The fo
 
 - `baselines/` — all xlsx exports + Pine/MQL5 source (proprietary IP)
 - `bots/` — TV→MT5 mirror bots (proprietary IP; currently three: `regime-switch-bot.mjs`, `us30-orb-bot.mjs`, `nas100-v8-mwp-bot.mjs`)
+- `Data/` — M1 OHLCV CSVs (~300 MB; required at runtime, too big for git)
 - `monitor/baselines.json`, `monitor/state.json`, `monitor/history/`, `monitor/events/` — generated
 - `.env`, `.claude/settings.local.json` — credentials
 

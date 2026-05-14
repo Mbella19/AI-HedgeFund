@@ -82,10 +82,10 @@ All rules require minimum trade counts (5 for hard rules, 10 for soft ret, 30 fo
 
 ## Historical data for backtesting
 
-- US30 training: `/Users/gervaciusjr/Desktop/strategy dev v3/Data/US30 TRAINING.csv`
-- US30 vault: `/Users/gervaciusjr/Desktop/strategy dev v3/Data/us30 tru oos.csv`
-- NAS100 training: `/Users/gervaciusjr/Desktop/strategy dev v3/Data/NAS100 TRAINING.csv`
-- NAS100 vault: `/Users/gervaciusjr/Desktop/strategy dev v3/Data/NAS100 TRUE OOS.csv`
+- US30 training: `/Users/gervaciusjr/Desktop/Tradingview/Data/US30 TRAINING.csv`
+- US30 vault: `/Users/gervaciusjr/Desktop/Tradingview/Data/us30 tru oos.csv`
+- NAS100 training: `/Users/gervaciusjr/Desktop/Tradingview/Data/NAS100 TRAINING.csv`
+- NAS100 vault: `/Users/gervaciusjr/Desktop/Tradingview/Data/NAS100 TRUE OOS.csv`
 
 All CSVs are M1 bars (2019–2026). Resample to the strategy's timeframe in the Python backtester.
 

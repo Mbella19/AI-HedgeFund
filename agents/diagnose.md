@@ -17,8 +17,8 @@ You are diagnosing why a trading strategy has breached its backtest baseline.
 **Primary source — the CSV files** (for both TV and MT5 strategies, since the
 underlying instrument is the same index):
 
-- `/Users/gervaciusjr/Desktop/strategy dev v3/Data/{SYMBOL} TRAINING.csv` — frozen M1 bars for the baseline era
-- `/Users/gervaciusjr/Desktop/strategy dev v3/Data/{SYMBOL} LIVE.csv` — M1 bars appended nightly, covering the live/failure period
+- `/Users/gervaciusjr/Desktop/Tradingview/Data/{SYMBOL} TRAINING.csv` — frozen M1 bars for the baseline era
+- `/Users/gervaciusjr/Desktop/Tradingview/Data/{SYMBOL} LIVE.csv` — M1 bars appended nightly, covering the live/failure period
 - `{SYMBOL}` is `US30` for US30 strategies and `NAS100` for NAS100 strategies
 - Both files are tab-separated with columns `<DATE>\t<TIME>\t<OPEN>\t<HIGH>\t<LOW>\t<CLOSE>\t<TICKVOL>\t<VOL>\t<SPREAD>`
 - Load them together in Python (pandas `read_csv` with `sep='\t'`). Resample to the strategy's timeframe if it's above M1 (group every 5 rows for M5, every 30 rows for 30m).

@@ -26,8 +26,12 @@ import numpy as np
 import pandas as pd
 
 
-TRAINING_CSV = Path("/Users/gervaciusjr/Desktop/strategy dev v3/Data/NAS100 TRAINING.csv")
-LIVE_CSV = Path("/Users/gervaciusjr/Desktop/strategy dev v3/Data/NAS100 LIVE.csv")
+import os
+
+REPO_ROOT = Path(__file__).resolve().parent.parent.parent
+DATA_DIR = Path(os.environ.get("DATA_DIR", REPO_ROOT / "Data"))
+TRAINING_CSV = DATA_DIR / "NAS100 TRAINING.csv"
+LIVE_CSV = DATA_DIR / "NAS100 LIVE.csv"
 
 
 @dataclass

@@ -39,6 +39,9 @@ monitor/mt5_mirror/__pycache__/
 baselines/
 bots/
 
+# Historical OHLCV data (~300 MB) — required for backtests but too large for git
+Data/
+
 # Claude local state (user-specific permissions, credentials in bash history)
 .claude/settings.local.json
 .claude/scheduled_tasks.lock

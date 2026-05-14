@@ -488,7 +488,7 @@ baseline period **and** the live/failure window before it is committed. For
 TradingView strategies this uses `pine_set_source` + `pine_smart_compile` +
 `data_get_strategy_results` round trips. For MT5 strategies the matching
 Python mirror in `monitor/mt5_mirror/` runs against the raw M1 CSV data in
-`/Users/gervaciusjr/Desktop/strategy dev v3/Data/`.
+`/Users/gervaciusjr/Desktop/Tradingview/Data/`.
 
 Successful tweaks are logged to
 `monitor/events/<strategy_id>-<date>/tweak_applied.md` with before/after
@@ -529,10 +529,11 @@ itself runs off the short goal prompts.
 
 ## Historical data
 
-Backtesting and rebuilds use M1 OHLCV CSVs versioned outside this repo:
+Backtesting and rebuilds use M1 OHLCV CSVs in the repo's `Data/` directory
+(~300 MB; gitignored so they don't bloat the repo):
 
 ```
-/Users/gervaciusjr/Desktop/strategy dev v3/Data/
+/Users/gervaciusjr/Desktop/Tradingview/Data/
 ├── US30 TRAINING.csv       136 MB, M1 bars, frozen reference (2019–2026)
 ├── US30 LIVE.csv           (auto-grown) appended nightly with fresh bars
 ├── us30 tru oos.csv         14 MB, sealed vault (touch once)
@@ -630,6 +631,9 @@ The following are excluded by `.gitignore`:
 - **Proprietary IP:** `baselines/` (all xlsx exports + Pine/MQL5 source) and
   `bots/` (TV→MT5 bridge bots). Anyone running this monitor brings their own
   strategies.
+- **Historical data:** `Data/` (~300 MB of M1 OHLCV CSVs). Required at
+  runtime but excluded from git because of size; reproduce it by exporting
+  MT5 bars yourself or by running `npm run update-data:bootstrap`.
 - **Generated state:** `monitor/baselines.json`, `monitor/state.json`,
   `monitor/history/`, `monitor/events/`, `monitor/config/mt5_tools.json`,
   `monitor/mt5_mirror/__pycache__/`.
