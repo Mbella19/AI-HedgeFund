@@ -105,6 +105,14 @@ The repo publicly hosts the monitor framework but **not the strategies**. The fo
 
 When adding a strategy: the artefacts in `baselines/` won't be tracked (intentional), but the registry entry in `monitor/config/strategies.json` **is** tracked, so the commit is required even when the source stays local.
 
+## Repo guardrails
+
+- **`/goal` 4000-char ceiling.** The user's `/goal` slash command rejects payloads at or above 4000 chars. `agents/strategy-dev-goal-us30.md` and `…-nas100.md` are sized to fit just under (currently 3962 / 3968). Rebuild-process rules (workspace/finalize, etc.) live in `agents/remediate_rebuild.md`'s context block — appended as a separate user message after the `/goal` payload — so they don't eat into the budget.
+- **Enforcement.** `.githooks/pre-commit` blocks any commit where either goal file is ≥ 4000 chars (checks the staged blob, so partial stages work too). Enable per-clone with:
+  ```bash
+  git config core.hooksPath .githooks
+  ```
+
 ## Notes
 
 - `AGENTS.md` is a stale duplicate of an older CLAUDE.md (still references "Codex"). When updating CLAUDE.md, prefer to either delete AGENTS.md or sync the two — do not silently let them drift further.

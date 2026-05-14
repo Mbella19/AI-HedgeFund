@@ -279,6 +279,10 @@ cd dashboard && npm install && cd ..
 # Copy the env template and fill in broker credentials
 cp .env.example .env
 $EDITOR .env
+
+# Enable repo git hooks (currently: pre-commit char-limit check on the /goal
+# files). Per-repo setting; safe to re-run.
+git config core.hooksPath .githooks
 ```
 
 ### .env fields

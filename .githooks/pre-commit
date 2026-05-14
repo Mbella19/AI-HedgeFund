@@ -1,0 +1,61 @@
+#!/usr/bin/env bash
+# .githooks/pre-commit — repo guardrails.
+#
+# Enabled via:
+#   git config core.hooksPath .githooks
+# (See README "Setup" section for the one-liner; safe to re-run.)
+#
+# Current check:
+#   agents/strategy-dev-goal-{us30,nas100}.md must stay under 4000 chars
+#   because the /goal slash command rejects payloads at or above that limit.
+#   The workspace/finalize rule lives in agents/remediate_rebuild.md
+#   (a separate, unconstrained user message), NOT inside the goal files.
+
+set -uo pipefail
+
+LIMIT=4000
+FILES=(
+    "agents/strategy-dev-goal-us30.md"
+    "agents/strategy-dev-goal-nas100.md"
+)
+
+# Only enforce when one of these files is actually in this commit.
+staged=()
+while IFS= read -r line; do
+    [ -n "$line" ] && staged+=("$line")
+done < <(git diff --cached --name-only --diff-filter=ACM 2>/dev/null)
+
+touched=0
+overflow=0
+
+for target in "${FILES[@]}"; do
+    in_commit=0
+    for s in "${staged[@]:-}"; do
+        [ "$s" = "$target" ] && in_commit=1 && break
+    done
+    [ $in_commit -eq 1 ] || continue
+    touched=1
+
+    # Read the version actually being committed (the staged blob), not the
+    # working tree — handles `git add -p` partial stages correctly.
+    size=$(git show ":$target" 2>/dev/null | wc -c | tr -d ' ')
+
+    if [ -z "$size" ] || [ "$size" -ge "$LIMIT" ]; then
+        echo "✗ $target — $size chars (limit $LIMIT)" >&2
+        overflow=1
+    else
+        echo "✓ $target — $size chars (under $LIMIT)" >&2
+    fi
+done
+
+if [ $overflow -eq 1 ]; then
+    echo "" >&2
+    echo "REFUSING COMMIT — /goal slash command rejects payloads ≥ $LIMIT chars." >&2
+    echo "Trim the goal file(s) above. The workspace/finalize rule belongs in" >&2
+    echo "agents/remediate_rebuild.md, not inside the goal payload." >&2
+    exit 1
+fi
+
+[ $touched -eq 1 ] && echo "" >&2
+
+exit 0
