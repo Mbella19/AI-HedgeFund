@@ -25,6 +25,7 @@ The monitor is fronted by npm scripts (see `package.json` for the exact mappings
 | `npm run dashboard` | Run the dashboard (Vite + React + Express) in dev mode |
 | `npm run start` | Persistent EOD loop via `scheduler/loop.sh` |
 | `npm run eod` | One-shot EOD via `scheduler/run_eod.sh` |
+| `npm run goal:us30` / `goal:nas100` | Run a strategy-rebuild goal under `scheduler/auto_resume.sh` — auto-resumes through 5-hour Claude rate-limit windows. Run inside `tmux` + `caffeinate -i` for unattended overnight runs. Logs to `monitor/history/goal_run_*.log`. |
 
 To register a new strategy: drop the xlsx into `baselines/<venue>/<name>/performance/`, the code into `baselines/<venue>/<name>/code/`, add an entry to `monitor/config/strategies.json`, then `npm run parse`.
 

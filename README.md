@@ -355,6 +355,9 @@ even when the source stays local.
 | `npm run dashboard` | Dashboard in dev mode (Vite + API) |
 | `npm run dashboard:build` | Production build |
 | `npm run dashboard:prod` | Production server (`NODE_ENV=production`) |
+| `npm run goal:us30` | Run the US30 rebuild goal under `auto_resume.sh` (handles 5h limits) |
+| `npm run goal:nas100` | Run the NAS100 rebuild goal under `auto_resume.sh` |
+| `npm run goal <file>` | Same wrapper with an arbitrary goal file or inline text |
 
 ### End-of-day autonomous run
 
@@ -387,6 +390,37 @@ forced `hard_max_dd` breach and launches Claude Code in drill mode — useful
 for testing diagnose/remediate end-to-end without waiting for a real failure.
 Output is routed to `monitor/events/drill-<ts>/`; no production state is
 mutated.
+
+### Long-running `/goal` with auto-resume
+
+A `/goal`-driven rebuild can easily run past the Claude Code 5-hour usage
+window. `scheduler/auto_resume.sh` wraps the run: it fires `claude -p
+"/goal …"` headlessly, watches for the rate-limit signal in the output,
+sleeps ~5h5m, and resumes the same session via `claude --continue`. It loops
+until the goal completes (clean exit + completion keywords in the tail) or
+you Ctrl-C.
+
+```bash
+# Convenience npm scripts for the two registered rebuild prompts
+npm run goal:us30
+npm run goal:nas100
+
+# Arbitrary goal file or inline text
+npm run goal -- agents/strategy-dev-goal-nas100.md
+npm run goal -- "your custom goal text here"
+```
+
+For unattended overnight runs on macOS, launch inside `tmux` with
+`caffeinate -i` so the laptop doesn't idle-sleep:
+
+```bash
+tmux new -s goal "caffeinate -i npm run goal:nas100"
+# detach: Ctrl-B then D
+# reattach later: tmux a -t goal
+```
+
+Each run logs to `monitor/history/goal_run_<label>_<ts>.log` — you can tail
+it from another terminal or surface it in the dashboard.
 
 ---
 
