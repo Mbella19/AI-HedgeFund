@@ -54,6 +54,6 @@ Write a summary to `monitor/history/<YYYY-MM-DD>-summary.md`:
 
 - Never skip a breached strategy.
 - For the tweak path: only change `input` parameter defaults, never strategy logic. Budget: max 3 tweak attempts per strategy per run.
-- For the rebuild path: follow `docs/strategy-dev-guidelines.md` end-to-end. Write output to `monitor/events/<strategy_id>-<ts>/proposed_new/`. Do NOT auto-deploy rebuilt strategies — leave them for user review.
+- For the rebuild path: follow `agents/remediate_rebuild.md`. It dispatches the symbol-matched goal prompt (`agents/strategy-dev-goal-us30.md` or `agents/strategy-dev-goal-nas100.md`) via the `/goal` slash command, so Claude keeps iterating until the pass condition is met. Write output to `monitor/events/<strategy_id>-<ts>/proposed_new/`. Do NOT auto-deploy rebuilt strategies — leave them for user review.
 - Log everything. Every decision, every parameter change, every backtest result.
 - If both MCPs are down and can't be restored, report the failure and exit cleanly.

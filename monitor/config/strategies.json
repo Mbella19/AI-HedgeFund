@@ -56,6 +56,28 @@
       "baseline_xlsx": "baselines/mt5/US30 VWAP/performance/US30 VWAP (1).xlsx",
       "source_file": "baselines/mt5/US30 VWAP/code/US30 VWAP.txt",
       "pine_strategy_name": null
+    },
+    {
+      "id": "hsdm_mt5",
+      "name": "HSDM",
+      "venue": "mt5",
+      "symbol": "NAS100",
+      "timeframe": "M1",
+      "magic": 314159,
+      "baseline_xlsx": "baselines/mt5/HSDM NAS100/performance/HSDM.xlsx",
+      "source_file": "baselines/mt5/HSDM NAS100/code/HSDM.txt",
+      "pine_strategy_name": null
+    },
+    {
+      "id": "iter75_ensemble_mt5",
+      "name": "iter75 Ensemble",
+      "venue": "mt5",
+      "symbol": "NAS100",
+      "timeframe": "H1",
+      "magic": 75000,
+      "baseline_xlsx": "baselines/mt5/ITER75 ENSEMBLE NAS100/performance/ITER75 ENSEMBLE.xlsx",
+      "source_file": "baselines/mt5/ITER75 ENSEMBLE NAS100/code/ITER75 ENSEMBLE.txt",
+      "pine_strategy_name": null
     }
   ]
 }

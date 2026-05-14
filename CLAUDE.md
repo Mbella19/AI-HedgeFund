@@ -8,10 +8,12 @@ running across TradingView Desktop and MetaTrader 5.
 ```
 Tradingview/
 ├── agents/               Prompt fragments loaded by the EOD Claude run
-│   ├── daily_run.md          Top-level orchestration
-│   ├── diagnose.md           Failure analysis
-│   ├── remediate_tweak.md    Parameter-tuning remediation path
-│   └── remediate_rebuild.md  Full rebuild remediation path
+│   ├── daily_run.md                   Top-level orchestration
+│   ├── diagnose.md                    Failure analysis
+│   ├── remediate_tweak.md             Parameter-tuning remediation path
+│   ├── remediate_rebuild.md           Rebuild dispatcher (routes by symbol, uses /goal)
+│   ├── strategy-dev-goal-us30.md      Strategy-design goal for US30 rebuilds
+│   └── strategy-dev-goal-nas100.md    Strategy-design goal for NAS100 rebuilds
 │
 ├── baselines/            Frozen backtest exports (the source of truth)
 │   ├── tradingview/<strategy>/code/<name>.txt
@@ -107,7 +109,13 @@ All CSVs are M1 bars (2019–2026). Resample to the strategy's timeframe in the 
 
 ## Rebuild remediation
 
-If a strategy's edge is gone, the rebuild path in `agents/remediate_rebuild.md`
-runs the full protocol from `docs/strategy-dev-guidelines.md`. Rebuilt strategies
-land in `monitor/events/<id>/proposed_new/` and are NEVER auto-deployed — the user
+If a strategy's edge is gone, `agents/remediate_rebuild.md` dispatches the
+rebuild as a **`/goal` invocation** with the symbol-matched goal prompt:
+
+- US30 strategies → `agents/strategy-dev-goal-us30.md`
+- NAS100 strategies → `agents/strategy-dev-goal-nas100.md`
+
+The `/goal` skill keeps Claude iterating until the goal's pass condition is met
+(all 12 criteria + DSR > 0.95 + vault). Rebuilt strategies land in
+`monitor/events/<id>/proposed_new/` and are NEVER auto-deployed — the user
 reviews the validation report before replacing the running strategy.

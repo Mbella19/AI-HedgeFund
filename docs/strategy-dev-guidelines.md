@@ -32,20 +32,108 @@ The VAULT (us30 tru oos.csv) is a sealed envelope. Before opening it:
 - A failed vault test is more valuable than a passed iterated one. Report it
   honestly. Do not p-hack the result.
 
-# ITERATION BUDGET — HARD CAP
-You have a maximum of 15 iterations against the VALIDATION slice.
+# ITERATION DISCIPLINE — NO CAP, NO EARLY EXIT
+There is NO hard cap on iterations and NO early exit. Keep working until a
+frozen strategy passes every criterion in this document (12 validation
+criteria, DSR > 0.95, vault test). If a strategy — or a whole design family —
+hits a ceiling, switch families and keep going. There is no version of "done"
+that isn't a passing strategy: no "I tried N families" exit, no "honest
+exhaustion" exit, no post-mortem in place of a pass.
+
+Definitions and discipline that still apply:
 - One iteration = one full backtest where you change ANYTHING (entry rule,
   exit rule, parameter, filter, indicator, lookback).
 - Multi-dimensional grid searches count as their cell count, not as one.
-- After 15 iterations, present your best strategy and STOP.
-- If your best still fails criteria, present it with a candid post-mortem
-  rather than burning more iterations.
+- You may iterate freely on the TRAINING slice.
+- Every run that touches the VALIDATION slice must be logged in
+  iteration_log.md with the exact change and reason. The final count of
+  validation iterations is the N_trials input to the Deflated Sharpe Ratio.
 
-You may iterate freely on the TRAINING slice. The 15-iteration cap applies
-ONLY to runs that touch the VALIDATION slice.
+Why no cap, and the trap to avoid: every validation iteration is a free shot
+at the held-out data, so with enough shots anything passes by chance. The DSR
+is what protects you here — it penalizes Sharpe by the trial count, skew, and
+kurtosis. Iterate as long as you need to, but expect the DSR bar (0.95) to
+rise with every validation touch. If you've burned 50+ validation iterations
+and DSR is still failing, your design family is probably wrong; rebuild on a
+different premise rather than grind further.
 
-This budget exists because every validation iteration is a free shot at the
-held-out data. With unlimited shots, anything passes by chance.
+# WHEN A STRATEGY FAILS — SCRAP IT AND START FRESH, DO NOT QUIT
+A failed strategy is INFORMATION, not a stopping condition. If the current
+candidate cannot meet the requirements (for example, you have shown that 20%
+CAGR is unreachable with 800+ trades and Sharpe > 1.0 in the family you
+tried), the correct response is:
+
+1. Document what the family's edge ceiling actually was, in iteration_log.md.
+2. SCRAP the strategy entirely — throw away the code, parameters, premise.
+3. Pick a fundamentally different premise from the novelty test (a)–(c) below
+   — or invent an entirely new one — and design a NEW strategy from scratch.
+4. Run the full pipeline on the new candidate.
+5. Repeat until the goal is complete.
+
+"Honest fail > p-hacked pass" is ONLY about results integrity for a single
+candidate — do not fudge a strategy's numbers to look like a pass. It does
+NOT mean "give up after one failure," or after ten, or after fifty. Quitting
+the mission before a strategy passes is the OPPOSITE of what that rule asks.
+
+There is exactly ONE acceptable terminal state: a frozen strategy that passes
+all 12 criteria + DSR > 0.95 + the vault test. That's it. There is no "honest
+exhaustion" exit, no "I attempted N families" exit, no "this asset doesn't
+have enough edge" exit, no post-mortem-in-place-of-success exit. If nothing
+has passed yet, you are not done — invent another approach and keep going.
+
+If you genuinely run out of obvious design families, invent new ones: novel
+feature combinations, regime-conditioned position sizing, ensembles of weak
+signals, event/calendar effects, order-flow / microstructure proxies, cross-
+asset lead-lag, alternative signal timeframes feeding an intraday execution
+layer, nonlinear filters, and so on. The strategy space is not exhausted by
+the families you've tried so far.
+
+"Finalize artifacts without opening the vault because nothing has passed yet"
+is NOT an acceptable terminal state. If you find yourself there, scrap the
+dead candidate and design a new one.
+
+# STRATEGY NOVELTY — MUST BE FUNDAMENTALLY DIFFERENT
+Before writing any code, read every strategy already in the live portfolio:
+
+    /Users/gervaciusjr/Desktop/Tradingview/baselines/
+
+Walk both subtrees (`tradingview/` and `mt5/`). For each strategy folder, read
+the source under `code/` and skim the performance file under `performance/`
+so you understand its actual edge, trigger, exit, and session — not just its
+name. Treat that directory as the authoritative list of what already exists;
+do not rely on prior knowledge of which strategies are there.
+
+Your strategy must be FUNDAMENTALLY DIFFERENT from every strategy you find in
+that directory. "Fundamentally different" means at least two of (a)–(c) must
+hold versus each existing baseline, and at least one of (a) or (b) must hold
+versus every existing baseline:
+  (a) Different core edge family (e.g. mean reversion vs momentum vs
+      carry/seasonality vs liquidity-sweep vs volatility-breakout vs
+      microstructure vs cross-asset signal — not a reskin of the same edge).
+  (b) Different setup trigger (e.g. opening range vs VWAP touch vs prior-day
+      level reclaim vs N-bar breakout vs session-anchored stat) — a new
+      parameter on the same trigger does NOT count.
+  (c) Different exit/management logic (e.g. time stop vs ATR trail vs
+      structure stop vs scale-out vs target-at-stat-level).
+
+Trading session is explicitly OUT OF SCOPE for this test. A new strategy may
+trade the same session as an existing baseline (NY open, London, cash close,
+overnight — whatever) and that is fine. Picking a different session is neither
+required for novelty nor sufficient on its own. Choose whatever session your
+edge actually needs; it is an operational decision, not a differentiator.
+
+What does NOT count as "fundamentally different":
+- Same edge with different parameters, indicator lengths, or thresholds.
+- Same trigger with an extra filter bolted on.
+- Same strategy on a different timeframe.
+- Same strategy on a different session (NY ↔ London etc. is NOT novelty).
+- Same strategy on a different symbol from the same complex (US30 ↔ NAS100
+  swap is NOT novelty).
+
+Before writing any code, write strategy_novelty.md that names each existing
+baseline, states which of (a)–(c) you are differentiating on, and gives a
+one-paragraph argument for why your edge is independent. If you cannot make
+that argument honestly, pick a different idea before you start.
 
 # TRADING REQUIREMENTS
 1. NO look-ahead bias of any kind. Strategy can only use information
@@ -61,7 +149,7 @@ held-out data. With unlimited shots, anything passes by chance.
 8. Beats buy-and-hold on the VAULT data on BOTH total return AND Sharpe.
 
 # REALISM REQUIREMENTS — backtest must include
-- Commission: $3.50 per round trip per 0.1 lot (Pepperstone-equivalent)
+- Commission: $3.50 per round trip per 1.0 lot (Pepperstone-equivalent)
 - Slippage: 1 point on entry, 1 point on exit, on every trade
 - Spread: use bid/ask if available, otherwise add 2 points to every trade
 
@@ -106,13 +194,16 @@ After all 12 criteria pass and DSR > 0.95:
 Produce all of these:
 1. data_split.json — start/end timestamps of training and validation slices.
    Written on step one, before any strategy code.
-2. strategy.py — full backtest code, reproducible from CSV with one command.
-3. frozen_strategy.json — every parameter, immutable after lock.
-4. validation_report.md — all 12 criteria with values, DSR, vault result,
+2. strategy_novelty.md — novelty argument vs every existing baseline. Written
+   BEFORE strategy.py.
+3. strategy.py — full backtest code, reproducible from CSV with one command.
+4. frozen_strategy.json — every parameter, immutable after lock.
+5. validation_report.md — all 12 criteria with values, DSR, vault result,
    equity curve PNG, monthly returns heatmap, drawdown chart.
-5. iteration_log.md — count of validation iterations used, one-line note per
-   iteration describing what was changed and why.
-6. mql5_translation_notes.md — for every assumption in your Python backtest
+6. iteration_log.md — total count of validation iterations used (this is
+   N_trials for DSR), one-line note per iteration describing what was changed
+   and why.
+7. mql5_translation_notes.md — for every assumption in your Python backtest
    that could differ in MT5 live execution. At minimum cover:
    - Bar close timing (Python: end of bar; MT5: OnTick fires intra-bar)
    - Indicator handles vs vectorized rolling windows
@@ -128,6 +219,9 @@ Produce all of these:
    in this layer, not in the strategy logic.
 
 # DO NOT
+- Do not stop, write a final post-mortem, or finalize artifacts until a
+  strategy has passed all 12 criteria + DSR + the vault test. "Nothing
+  passed yet" is not done — keep inventing and testing new strategies.
 - Do not look at vault data until all criteria pass.
 - Do not iterate against vault even once.
 - Do not p-hack: don't try 50 entry rules and pick the prettiest equity curve.
