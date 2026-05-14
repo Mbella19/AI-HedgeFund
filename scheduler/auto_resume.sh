@@ -59,6 +59,12 @@ SHORT_PAUSE_SECS=30
 # Pause before retrying a non-rate-limit error
 ERROR_PAUSE_SECS=300  # 5 min
 
+# Phrase posted as a new user message every time the wrapper resumes a session.
+# `claude --continue` alone only re-opens the chat; we need to send a message
+# to actually kick /goal back into autonomous mode. Override per run via env:
+#   RESUME_PROMPT="re-engage /goal" npm run goal:nas100
+RESUME_PROMPT="${RESUME_PROMPT:-continue with the goal}"
+
 # Regex patterns (case-insensitive) used to classify the last ~200 log lines
 RATE_PATTERNS='rate.?limit|usage.?limit|5.?hour.?limit|too many requests|429|reset.?in|quota.?exceeded'
 DONE_PATTERNS='goal.?(complete|completed|satisfied|achieved|met)|vault.?test.?passed|all.?12.?criteria.?pass'
@@ -74,11 +80,12 @@ loge() { echo "[$(date '+%Y-%m-%d %H:%M:%S')] $*" >&2; echo "[$(date '+%Y-%m-%d 
 log "════════════════════════════════════════════════════"
 log "  AUTO-RESUME GOAL RUNNER"
 log "════════════════════════════════════════════════════"
-log "Goal:      $GOAL_LABEL"
-log "Goal file: ${GOAL_INPUT}"
-log "Log:       $LOG"
-log "Cooldown:  ${COOLDOWN_SECS}s (~5h5m)"
-log "PID:       $$"
+log "Goal:           $GOAL_LABEL"
+log "Goal file:      ${GOAL_INPUT}"
+log "Resume prompt:  \"${RESUME_PROMPT}\""
+log "Log:            $LOG"
+log "Cooldown:       ${COOLDOWN_SECS}s (~5h5m)"
+log "PID:            $$"
 log ""
 
 # Verify claude CLI is on PATH
@@ -131,9 +138,11 @@ while true; do
         claude -p "/goal $GOAL_TEXT" 2>&1 | tee -a "$LOG"
         EXIT="${PIPESTATUS[0]}"
     else
-        # Subsequent attempts: resume the same session
-        log "Resuming:  claude --continue -p \"continue the goal\""
-        claude --continue -p "continue the goal" 2>&1 | tee -a "$LOG"
+        # Subsequent attempts: resume the same session and post the resume
+        # phrase as a new user message — bare `claude --continue` would just
+        # reopen the chat without kicking /goal back into autonomous mode.
+        log "Resuming:  claude --continue -p \"${RESUME_PROMPT}\""
+        claude --continue -p "$RESUME_PROMPT" 2>&1 | tee -a "$LOG"
         EXIT="${PIPESTATUS[0]}"
     fi
 
