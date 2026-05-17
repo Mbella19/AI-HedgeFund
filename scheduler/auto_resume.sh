@@ -21,7 +21,7 @@
 #
 # Log:
 #   monitor/history/goal_run_<label>_<YYYYMMDD-HHMMSS>.log
-#   (tail it from another terminal or your dashboard to watch progress)
+#   (tail it from another terminal to watch progress)
 
 set -uo pipefail   # NOT -e — we handle non-zero exits explicitly
 

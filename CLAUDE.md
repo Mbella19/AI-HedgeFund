@@ -22,7 +22,6 @@ The monitor is fronted by npm scripts (see `package.json` for the exact mappings
 | `npm run preflight` | Verify TV CDP + start MT5 MCP if down (sources `.env`) |
 | `npm run update-data` | Append fresh M1 bars to `*LIVE.csv` files via MT5 MCP |
 | `npm run update-data:bootstrap` | First-run version (20 000 bars per symbol) |
-| `npm run dashboard` | Run the dashboard (Vite + React + Express) in dev mode |
 | `npm run start` | Persistent EOD loop via `scheduler/loop.sh` |
 | `npm run eod` | One-shot EOD via `scheduler/run_eod.sh` |
 | `npm run goal:us30` / `goal:nas100` | Run a strategy-rebuild goal under `scheduler/auto_resume.sh` — auto-resumes through 5-hour Claude rate-limit windows. Run inside `tmux` + `caffeinate -i` for unattended overnight runs. Logs to `monitor/history/goal_run_*.log`. |
@@ -116,6 +115,5 @@ When adding a strategy: the artefacts in `baselines/` won't be tracked (intentio
 ## Notes
 
 - `AGENTS.md` is a stale duplicate of an older CLAUDE.md (still references "Codex"). When updating CLAUDE.md, prefer to either delete AGENTS.md or sync the two — do not silently let them drift further.
-- The `dashboard/` directory is a standalone Vite + React + Express app for viewing breach history on phone/desktop; installed independently, started via `npm run dashboard` (web on Vite, API on `dashboard/server.mjs`).
 - TV→MT5 bridge bots are independent processes the monitor does not manage; the monitor reads their fills indirectly via their MT5 magic (single magic per bot).
 - Broker credentials and any MT5 server config must flow from `.env` into `scheduler/start_daily.sh` — never hardcode them in scripts or prompts.

@@ -1,7 +1,5 @@
 # Dependencies
 node_modules/
-dashboard/node_modules/
-dashboard/dist/
 __pycache__/
 *.pyc
 .venv/
@@ -45,4 +43,3 @@ Data/
 # Claude local state (user-specific permissions, credentials in bash history)
 .claude/settings.local.json
 .claude/scheduled_tasks.lock
-monitor/loop.pid.json

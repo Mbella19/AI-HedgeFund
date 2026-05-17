@@ -20,9 +20,6 @@ in `agents/`. All remediation is bounded by hard rules: tweaks only touch
 vault test, and no rebuilt strategy is ever auto-deployed without human
 review.
 
-A companion **dashboard** (`dashboard/`, Vite + React + Express) exposes live
-breach status, recent events, and per-strategy charts for phone or desktop.
-
 ---
 
 ## Table of contents
@@ -40,7 +37,6 @@ breach status, recent events, and per-strategy charts for phone or desktop.
 - [Remediation paths](#remediation-paths)
 - [Historical data](#historical-data)
 - [MCP servers](#mcp-servers)
-- [Dashboard](#dashboard)
 - [Security & gitignore policy](#security--gitignore-policy)
 - [Contributing](#contributing)
 - [License](#license)
@@ -151,14 +147,13 @@ diagnosis pipeline. All rule implementations live in
 ### Languages and runtimes
 
 - **Node.js (ES modules)** — live trade collection, breach detection, CDP and
-  MT5 JSON-RPC clients, the dashboard API
+  MT5 JSON-RPC clients
 - **Python 3.11+** — baseline xlsx parsing via `openpyxl`, plus the
   per-strategy Python backtest mirrors in `monitor/mt5_mirror/` (built lazily
   on first breach for any MT5 strategy)
 - **Bash** — scheduler preflight, EOD entry point, persistent loop, drill
 - **Pine Script v6** — TradingView strategies (`baselines/tradingview/*/code/`)
 - **MQL5** — MetaTrader 5 EAs (`baselines/mt5/*/code/`)
-- **Vite + React + Express** — dashboard (`dashboard/`)
 
 ### External interfaces
 
@@ -191,7 +186,7 @@ the first breach that needs one.
 ├── .env.example             Template for MT5 credentials + ports
 ├── .gitignore               Excludes baselines/, bots/, secrets, generated state
 ├── .mcp.json                Declares the tradingview + metatrader MCP servers
-├── package.json             npm scripts: parse, collect, check, monitor, dashboard
+├── package.json             npm scripts: parse, collect, check, monitor
 │
 ├── agents/                  Claude agent prompts for the daily loop
 │   ├── daily_run.md                   Top-level orchestration
@@ -209,11 +204,6 @@ the first breach that needs one.
 │   ├── regime-switch-bot.mjs          TV→MT5 mirror for Regime Switch Reclaim
 │   ├── us30-orb-bot.mjs               TV→MT5 mirror for US30 ORB Reversal
 │   └── nas100-v8-mwp-bot.mjs          TV→MT5 mirror for NAS100 V8 MWP
-│
-├── dashboard/   (Vite + React + Express)
-│   ├── server.mjs                     API server reading monitor state.json + history
-│   ├── package.json                   dev:web, dev:api, build, start, preview
-│   └── …
 │
 ├── docs/
 │   └── strategy-dev-guidelines.md     Long-form rebuild contract (still referenced by remediate_tweak.md)
@@ -272,9 +262,6 @@ npm install
 
 # Python dependencies
 pip install openpyxl
-
-# Dashboard (separate install)
-cd dashboard && npm install && cd ..
 
 # Copy the env template and fill in broker credentials
 cp .env.example .env
@@ -356,9 +343,6 @@ even when the source stays local.
 | `npm run start` | `bash scheduler/loop.sh` (persistent loop) |
 | `npm run update-data` | Append fresh M1 bars to `{US30,NAS100} LIVE.csv` |
 | `npm run update-data:bootstrap` | Bootstrap version (20 000 bars per symbol) |
-| `npm run dashboard` | Dashboard in dev mode (Vite + API) |
-| `npm run dashboard:build` | Production build |
-| `npm run dashboard:prod` | Production server (`NODE_ENV=production`) |
 | `npm run goal:us30` | Run the US30 rebuild goal under `auto_resume.sh` (handles 5h limits) |
 | `npm run goal:nas100` | Run the NAS100 rebuild goal under `auto_resume.sh` |
 | `npm run goal <file>` | Same wrapper with an arbitrary goal file or inline text |
@@ -424,7 +408,7 @@ tmux new -s goal "caffeinate -i npm run goal:nas100"
 ```
 
 Each run logs to `monitor/history/goal_run_<label>_<ts>.log` — you can tail
-it from another terminal or surface it in the dashboard.
+it from another terminal.
 
 ---
 
@@ -621,24 +605,6 @@ Python mirrors in `monitor/mt5_mirror/`.
 
 ---
 
-## Dashboard
-
-A standalone Vite + React + Express app in `dashboard/`. Reads
-`monitor/baselines.json`, `monitor/state.json`, and `monitor/history/` via a
-small Express API (`dashboard/server.mjs`) and renders per-strategy charts,
-breach status, and event timelines. Phone-installable as a PWA.
-
-```bash
-npm run dashboard         # dev: Vite web + Express API concurrent
-npm run dashboard:build   # production build
-npm run dashboard:prod    # production server
-```
-
-The dashboard is independent of the EOD agent loop — it only reads the
-artefacts the monitor produces.
-
----
-
 ## Security & gitignore policy
 
 This repo publicly hosts the monitor framework but **not the strategies**.
@@ -683,6 +649,6 @@ welcome via issue or PR.
 [MIT](LICENSE) — © 2026 GervaciusJR.
 
 The MIT license covers the **framework** code in this repository: the EOD
-monitor, agent prompts, dashboard, schedulers, and supporting scripts. It
-does **not** grant any rights to the strategies, EAs, or bridge bots —
-those are gitignored (`baselines/`, `bots/`) and remain proprietary.
+monitor, agent prompts, schedulers, and supporting scripts. It does **not**
+grant any rights to the strategies, EAs, or bridge bots — those are
+gitignored (`baselines/`, `bots/`) and remain proprietary.

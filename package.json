@@ -19,10 +19,7 @@
     "start": "bash scheduler/loop.sh",
     "goal": "bash scheduler/auto_resume.sh",
     "goal:us30": "bash scheduler/auto_resume.sh agents/strategy-dev-goal-us30.md",
-    "goal:nas100": "bash scheduler/auto_resume.sh agents/strategy-dev-goal-nas100.md",
-    "dashboard": "cd dashboard && npm run dev",
-    "dashboard:build": "cd dashboard && npm run build",
-    "dashboard:prod": "cd dashboard && npm run start"
+    "goal:nas100": "bash scheduler/auto_resume.sh agents/strategy-dev-goal-nas100.md"
   },
   "dependencies": {
     "chrome-remote-interface": "^0.34.0"
